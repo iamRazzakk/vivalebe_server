@@ -13,17 +13,17 @@ interface IStripeAccountInfo {
 }
 
 // Authentication related (OTP, password reset)
-interface IAuthenticationProps {
-  isResetPassword: boolean;
-  oneTimeCode: number;
-  expireAt: Date;
-}
+// interface IAuthenticationProps {
+//   isResetPassword: boolean;
+//   oneTimeCode: number;
+//   expireAt: Date;
+// }
 // Main User interface
 export type IUser = {
   name: string;
   email: string;
   password: string;
-  confirmPassword: string;
+  confirmPassword?: string;
   role: USER_ROLES;
   onboardingComplete: boolean;
   status: "ACTIVE" | "DEACTIVE";
@@ -51,7 +51,7 @@ export type IUser = {
   verified: boolean;
   isBanned: boolean;
   tokenVersion: number;
-  authentication?: IAuthenticationProps;
+  // authentication?: IAuthenticationProps;
   accountInformation?: IStripeAccountInfo;
 };
 

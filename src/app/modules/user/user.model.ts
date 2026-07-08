@@ -34,10 +34,6 @@ const userSchema = new Schema<IUser, UserModal>(
       select: 0,
       minlength: 8,
     },
-    confirmPassword: {
-      type: String,
-      required: true,
-    },
     onboardingComplete: {
       type: Boolean,
       required: true,
@@ -47,6 +43,7 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       enum: Object.values(USER_ROLES),
       required: true,
+      default: USER_ROLES.USER,
     },
     status: {
       type: String,
@@ -139,23 +136,23 @@ const userSchema = new Schema<IUser, UserModal>(
       type: Boolean,
       default: false,
     },
-    authentication: {
-      type: {
-        isResetPassword: {
-          type: Boolean,
-          default: false,
-        },
-        oneTimeCode: {
-          type: Number,
-          default: null,
-        },
-        expireAt: {
-          type: Date,
-          default: null,
-        },
-      },
-      select: 0,
-    },
+    // authentication: {
+    //   type: {
+    //     isResetPassword: {
+    //       type: Boolean,
+    //       default: false,
+    //     },
+    //     oneTimeCode: {
+    //       type: Number,
+    //       default: null,
+    //     },
+    //     expireAt: {
+    //       type: Date,
+    //       default: null,
+    //     },
+    //   },
+    //   select: 0,
+    // },
     accountInformation: {
       status: {
         type: Boolean,
@@ -219,12 +216,7 @@ userSchema.pre("save", async function (next) {
   //password hash
   this.password = await bcrypt.hash(
     this.password,
-    Number(config.bcrypt_salt_rounds),
-  );
-  // confirm password hash
-  this.confirmPassword = await bcrypt.hash(
-    this.confirmPassword,
-    Number(config.bcrypt_salt_rounds),
+    Number(config?.bcrypt_salt_rounds || 10),
   );
   next();
 });

@@ -50,6 +50,8 @@ const loginUserFromDB = async (payload: ILoginData) => {
   return {
     accessToken,
     refreshToken,
+    role: user.role,
+    onboardingComplete: user.onboardingComplete,
   };
 };
 
@@ -81,7 +83,7 @@ const forgetPasswordToDB = async (email: string) => {
 //verify email
 const verifyEmailToDB = async (payload: IVerifyEmail) => {
   const { email, oneTimeCode } = payload;
-  const isExistUser = await User.findOne({ email }).select("+authentication");
+  const isExistUser = await User.findOne({ email }).select("+authentication +onboardingComplete");
   if (!isExistUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
@@ -114,6 +116,7 @@ const verifyEmailToDB = async (payload: IVerifyEmail) => {
       { verified: true, authentication: { oneTimeCode: null, expireAt: null } },
     );
     message = "Email verify successfully";
+    data = isExistUser?.onboardingComplete;
   } else {
     await User.findOneAndUpdate(
       { _id: isExistUser._id },
@@ -154,15 +157,16 @@ const resetPasswordToDB = async (
   }
 
   //user permission check
-  const isExistUser = await User.findById(isExistToken.user).select(
-    "+authentication",
-  );
-  if (!isExistUser?.authentication?.isResetPassword) {
-    throw new ApiError(
-      StatusCodes.UNAUTHORIZED,
-      "You don't have permission to change the password. Please click again to 'Forgot Password'",
-    );
+  const isExistUser = await User.findById(isExistToken.user).lean();
+  if (!isExistUser) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
+  // if (!isExistUser?.authentication?.isResetPassword) {
+  //   throw new ApiError(
+  //     StatusCodes.UNAUTHORIZED,
+  //     "You don't have permission to change the password. Please click again to 'Forgot Password'",
+  //   );
+  // }
 
   //validity check
   const isValid = await ResetToken.isExpireToken(token);

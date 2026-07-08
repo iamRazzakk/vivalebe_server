@@ -28,7 +28,7 @@ router
   .patch(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER),
     getUploadFields(),
-    async (req, res, next) => {
+    async (req, _res, next) => {
       try {
         const data = req.body;
         const profilePath = getSingleFilePath(
@@ -44,7 +44,15 @@ router
         next(error);
       }
     },
+    validateRequest(UserValidation.updateProfileZodSchema),
     UserController.updateProfile,
+  );
+
+router.route("/onboarding")
+  .patch(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER),
+    validateRequest(UserValidation.onboardingCompleteZodSchema),
+    UserController.updateOnboardingComplete,
   );
 
 export const UserRoutes = router;

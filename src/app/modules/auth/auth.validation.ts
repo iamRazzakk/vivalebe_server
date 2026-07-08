@@ -13,13 +13,13 @@ const createLoginZodSchema = z.object({
         password: z.string({ required_error: 'Password is required' })
     })
 });
-  
+
 const createForgetPasswordZodSchema = z.object({
     body: z.object({
         email: z.string({ required_error: 'Email is required' }).email({ message: 'Invalid email address' }),
     })
 });
-  
+
 const createResetPasswordZodSchema = z.object({
     body: z.object({
         newPassword: z.string({ required_error: 'Password is required' }),
@@ -28,16 +28,16 @@ const createResetPasswordZodSchema = z.object({
         })
     })
 });
-  
+
 const createChangePasswordZodSchema = z.object({
     body: z.object({
         currentPassword: z.string({
             required_error: 'Current Password is required',
-        }),
-        newPassword: z.string({ required_error: 'New Password is required' }),
+        }).min(8, { message: 'Current Password must be at least 8 characters' }),
+        newPassword: z.string({ required_error: 'New Password is required' }).min(8, { message: 'New Password must be at least 8 characters' }),
         confirmPassword: z.string({
             required_error: 'Confirm Password is required',
-        })
+        }).min(8, { message: 'Confirm Password must be at least 8 characters' })
     })
 });
 
