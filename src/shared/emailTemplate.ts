@@ -9,7 +9,7 @@ const createAccount = (values: ICreateAccount) => {
                 <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
     
                     <!-- Logo -->
-                    <img src="https://i.postimg.cc/6pgNvKhD/logo.png" alt="Servi Logo" style="display: block; margin: 0 auto 20px; width:150px" />
+                    <img src="https://res.cloudinary.com/dnsktebcu/image/upload/v1783499738/logo_mxjv2b.webp" alt="Servi Logo" style="display: block; margin: 0 auto 20px; width:150px" />
 
                     <!-- Greeting -->
                     <h2 style="color: #D0A933; font-size: 24px; margin-bottom: 20px;">Hey, ${values.name}!</h2>
@@ -44,7 +44,7 @@ const resetPassword = (values: IResetPassword) => {
         html: `
             <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">
                 <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                    <img src="https://i.postimg.cc/6pgNvKhD/logo.png" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
+                    <img src="https://res.cloudinary.com/dnsktebcu/image/upload/v1783499738/logo_mxjv2b.webp" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
                     <div style="text-align: center;">
                         <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Your single use code is:</p>
                         <div style="background-color: #277E16; width: 120px; padding: 10px; text-align: center; border-radius: 8px; color: #fff; font-size: 25px; letter-spacing: 2px; margin: 20px auto;">${values.otp}</div>

@@ -34,19 +34,9 @@ const getUserProfile = catchAsync(async (req: Request, res: Response) => {
 
 //update profile
 const updateProfile = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response) => {
     const user = req.user;
-
-    let profile;
-    if (req.files && "image" in req.files && req.files.image[0]) {
-      profile = `/image/${req.files.image[0].filename}`;
-    }
-
-    const data = {
-      profile,
-      ...req.body,
-    };
-    const result = await UserService.updateProfileToDB(user, data);
+    const result = await UserService.updateProfileToDB(user, req.body);
 
     sendResponse(res, {
       success: true,
@@ -57,22 +47,21 @@ const updateProfile = catchAsync(
   }
 );
 
-const createBultUsers = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const usersData = req.body;
-    const result = await UserService.createBultUser(usersData);
-    sendResponse(res, {
-      success: true,
-      statusCode: StatusCodes.OK,
-      message: "Bulk users created successfully",
-      data: result,
-    });
-  }
-);
+
+const updateOnboardingComplete = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  const result = await UserService.updateOnboardingCompleteToDB(user, req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Onboarding complete updated successfully",
+    data: result,
+  });
+});
 
 export const UserController = {
   createUser,
   getUserProfile,
-  createBultUsers,
   updateProfile,
+  updateOnboardingComplete,
 };
