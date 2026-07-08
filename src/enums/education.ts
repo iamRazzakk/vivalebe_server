@@ -1,0 +1,7 @@
+export enum educationEnum {
+  HIGHT_SCHOOL = "HIGHT_SCHOOL",
+  COLLEGE = "COLLEGE",
+  GRADUATE = "GRADUATE",
+  MASTERS = "MASTERS",
+  DOCTORATE = "DOCTORATE",
+}
