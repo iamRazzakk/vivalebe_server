@@ -16,4 +16,15 @@ const createPost = catchAsync(async (req: Request, res: Response, next: NextFunc
     });
 });
 
-export const PostsController = { createPost };
+const getAllPosts = catchAsync(async (req: Request, res: Response) => {
+    const result = await PostsServices.getAllPostsFromDB(req.query);
+    sendResponse(res, {
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: "Posts fetched successfully",
+        data: result.posts,
+        pagination: result.meta,
+    });
+});
+
+export const PostsController = { createPost, getAllPosts };

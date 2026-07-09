@@ -28,7 +28,8 @@ router.route("/")
             }
         },
         validateRequest(PostsValidations.createPostValidation as any),
-        PostsController.createPost);
+        PostsController.createPost)
+    .get(auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN), PostsController.getAllPosts);
 
 
 
