@@ -16,6 +16,7 @@ import generateOTP from "../../../util/generateOTP";
 import { ResetToken } from "../resetToken/resetToken.model";
 import { User } from "../user/user.model";
 import { jwtHelpers } from "../../../helpers/jwtHelper";
+import { dataDeleteFromRedis, dataGetFromRedis, dataStoreToRedis } from "../../../redis/redis.store";
 
 //login
 const loginUserFromDB = async (payload: ILoginData) => {
@@ -73,59 +74,45 @@ const forgetPasswordToDB = async (email: string) => {
   emailHelper.sendEmail(forgetPassword);
 
   //save to DB
-  const authentication = {
+  await dataStoreToRedis(`authentication:${isExistUser.email.toString()}`, JSON.stringify({
+    email: isExistUser?.email,
     oneTimeCode: otp,
     expireAt: new Date(Date.now() + 3 * 60000),
-  };
-  await User.findOneAndUpdate({ email }, { $set: { authentication } });
+  }), 3 * 60 * 1000);
+  return {
+    message: "Please check your email, we send a OTP!",
+  }
 };
 
 //verify email
 const verifyEmailToDB = async (payload: IVerifyEmail) => {
   const { email, oneTimeCode } = payload;
-  const isExistUser = await User.findOne({ email }).select("+authentication +onboardingComplete");
+  const isExistUser = await User.findOne({ email }).lean();
   if (!isExistUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
-
-  if (!oneTimeCode) {
-    throw new ApiError(
-      StatusCodes.BAD_REQUEST,
-      "Please give the otp, check your email we send a code",
-    );
+  const authentication = await dataGetFromRedis(`authentication:${isExistUser?.email?.toString()}`);
+  if (!authentication) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid otp!");
   }
-
-  if (isExistUser.authentication?.oneTimeCode !== oneTimeCode) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "You provided wrong otp");
-  }
-
-  const date = new Date();
-  if (date > isExistUser.authentication?.expireAt) {
-    throw new ApiError(
-      StatusCodes.BAD_REQUEST,
-      "Otp already expired, Please try again",
-    );
+  if (authentication?.oneTimeCode !== oneTimeCode) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid otp!");
   }
 
   let message;
   let data;
 
   if (!isExistUser.verified) {
-    await User.findOneAndUpdate(
-      { _id: isExistUser._id },
-      { verified: true, authentication: { oneTimeCode: null, expireAt: null } },
-    );
+    await User.findOneAndUpdate({ email }, { verified: true });
+    await dataDeleteFromRedis(`authentication:${isExistUser.email.toString()}`);
+    await dataDeleteFromRedis(`authentication:${isExistUser.email.toString()}`);
     message = "Email verify successfully";
     data = isExistUser?.onboardingComplete;
   } else {
     await User.findOneAndUpdate(
       { _id: isExistUser._id },
       {
-        authentication: {
-          isResetPassword: true,
-          oneTimeCode: null,
-          expireAt: null,
-        },
+        isResetPassword: true,
       },
     );
 
@@ -136,6 +123,7 @@ const verifyEmailToDB = async (payload: IVerifyEmail) => {
       token: createToken,
       expireAt: new Date(Date.now() + 5 * 60000),
     });
+    await dataDeleteFromRedis(`authentication:${isExistUser.email.toString()}`);
     message =
       "Verification Successful: Please securely store and utilize this code for reset password";
     data = createToken;
@@ -311,70 +299,13 @@ const resendVerificationEmailToDB = async (email: string) => {
   const accountEmailTemplate = emailTemplate.createAccount(emailValues);
   emailHelper.sendEmail(accountEmailTemplate);
 
-  // Update user with authentication details
-  const authentication = {
+  await dataStoreToRedis(`authentication:${existingUser.email.toString()}`, JSON.stringify({
+    email: existingUser?.email,
     oneTimeCode: otp,
     expireAt: new Date(Date.now() + 3 * 60000),
-  };
-
-  await User.findOneAndUpdate(
-    { email: email },
-    { $set: { authentication } },
-    { new: true },
-  );
+  }), 3 * 60 * 1000);
 };
 
-// social authentication
-// const socialLoginFromDB = async (payload: IUser) => {
-
-//     const { appId, role } = payload;
-
-//     const isExistUser = await User.findOne({ appId });
-
-//     if (isExistUser) {
-
-//         //create token
-//         const accessToken = jwtHelper.createToken(
-//             { id: isExistUser._id, role: isExistUser.role },
-//             config.jwt.jwt_secret as Secret,
-//             config.jwt.jwt_expire_in as string
-//         );
-
-//         //create token
-//         const refreshToken = jwtHelper.createToken(
-//             { id: isExistUser._id, role: isExistUser.role },
-//             config.jwt.jwtRefreshSecret as Secret,
-//             config.jwt.jwtRefreshExpiresIn as string
-//         );
-
-//         return { accessToken, refreshToken };
-
-//     } else {
-
-//         const user = await User.create({ appId, role, verified: true });
-//         if (!user) {
-//             throw new ApiError(StatusCodes.BAD_REQUEST, "Failed to created User")
-//         }
-
-//         //create token
-//         const accessToken = jwtHelper.createToken(
-//             { id: user._id, role: user.role },
-//             config.jwt.jwt_secret as Secret,
-//             config.jwt.jwt_expire_in as string
-//         );
-
-//         //create token
-//         const refreshToken = jwtHelper.createToken(
-//             { id: user._id, role: user.role },
-//             config.jwt.jwtRefreshSecret as Secret,
-//             config.jwt.jwtRefreshExpiresIn as string
-//         );
-
-//         return { accessToken, refreshToken };
-//     }
-// }
-
-// delete user
 // delete user
 const deleteUserFromDB = async (user: JwtPayload, password: string) => {
   const isExistUser = await User.findById(user.id).select("+password");

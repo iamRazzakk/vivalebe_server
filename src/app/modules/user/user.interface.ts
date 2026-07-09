@@ -51,6 +51,7 @@ export type IUser = {
   verified: boolean;
   isBanned: boolean;
   tokenVersion: number;
+  isResetPassword: boolean;
   // authentication?: IAuthenticationProps;
   accountInformation?: IStripeAccountInfo;
 };

@@ -49,11 +49,15 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   //save to DB
 
   // need to store this in redis not the DB
-  await dataStoreToRedis(`authentication:${createUser._id.toString()}`, JSON.stringify({
-    email: createUser.email,
-    oneTimeCode: otp,
-    expireAt: new Date(Date.now() + 3 * 60000),
-  }), 3 * 60000);
+  const result = await dataStoreToRedis(
+    `authentication:${createUser.email.toString()}`,
+    JSON.stringify({
+      email: createUser?.email,
+      oneTimeCode: otp,
+      expireAt: new Date(Date.now() + 3 * 60000)
+    }),
+    3 * 60 * 1000
+  );
 
   // const authentication = {
   //   oneTimeCode: otp,
