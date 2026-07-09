@@ -7,6 +7,8 @@ const createPostValidation = z.object({
         content: z.array(z.string({ required_error: "Content is required" })).min(1),
         type: z.enum(["IMAGE", "VIDEO"], { required_error: "Type is required" }),
         user: z.string({ required_error: "User is required" }),
+        likeCount: z.number().optional(),
+        commentCount: z.number().optional(),
     })
 })
     .refine((data) => {

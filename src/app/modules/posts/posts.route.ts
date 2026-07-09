@@ -28,10 +28,17 @@ router.route("/")
             }
         },
         validateRequest(PostsValidations.createPostValidation as any),
-        PostsController.createPost);
+        PostsController.createPost)
+    .get(auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN), PostsController.getAllPosts);
+
+router.route("/my")
+    .get(auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN), PostsController.getPostsByUser);
 
 
 
 
+
+   router.route("/:id") 
+    .get(auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN), PostsController.getSinglePost);
 
 export const PostsRoutes = router;

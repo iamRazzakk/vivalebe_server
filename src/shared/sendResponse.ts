@@ -5,10 +5,14 @@ type IData<T> = {
     statusCode: number;
     message?: string;
     pagination?: {
-        page: number;
+        page?: number;
         limit: number;
-        totalPage: number;
-        total: number;
+        totalPage?: number;
+        total?: number;
+        hasNextPage?: boolean;
+        hasPreviousPage?: boolean;
+        nextCursor?: string | null;
+        prevCursor?: string | null;
     };
     data?: T;
 };
