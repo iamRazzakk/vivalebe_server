@@ -21,6 +21,14 @@ const postsSchema = new Schema<IPosts, PostsModel>({
     enum: ["IMAGE", "VIDEO"],
     required: true,
   },
+  likeCount: {
+    type: Number,
+    default: 0,
+  },
+  commentCount: {
+    type: Number,
+    default: 0,
+  },
 }, {
   timestamps: true,
 });

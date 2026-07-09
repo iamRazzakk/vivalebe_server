@@ -5,6 +5,8 @@ export type IPosts = {
   content: string[];
   user: Types.ObjectId;
   type: "IMAGE" | "VIDEO";
+  likeCount?: number;
+  commentCount?: number;
 };
 
 export type PostsModel = Model<IPosts>;

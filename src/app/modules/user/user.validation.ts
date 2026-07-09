@@ -40,7 +40,9 @@ const onboardingCompleteZodSchema = z.object({
     state: z.string({ required_error: "State is required" }),
     zidCode: z.number({ required_error: "ZID code is required" }),
     nationality: z.string({ required_error: "Nationality is required" }),
-    DOB: z.string({ required_error: "Date of birth is required" }),
+    DOB: z.string({ required_error: "Date of birth is required" }).datetime({
+      message: "Invalid date of birth format",
+    }),
     livingWith: z.enum(Object.values(livingWithEnum) as [string, ...string[]], {
       required_error: "Living with is required",
     }),
@@ -84,7 +86,7 @@ const updateProfileZodSchema = z.object({
     state: z.string().optional(),
     zidCode: z.number().optional(),
     nationality: z.string().optional(),
-    DOB: z.string().optional(),
+    DOB: z.date().optional(),
     livingWith: z.enum(Object.values(livingWithEnum) as [string, ...string[]]).optional(),
     displayName: z.string().optional(),
     height: z.number().optional(),

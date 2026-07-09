@@ -36,7 +36,7 @@ export type IUser = {
   state: string;
   zidCode: number;
   nationality: string;
-  DOB: string;
+  DOB: Date;
   livingWith: livingWithEnum;
   displayName: string;
   height: number;

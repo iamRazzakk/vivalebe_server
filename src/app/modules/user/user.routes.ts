@@ -55,4 +55,16 @@ router.route("/onboarding")
     UserController.updateOnboardingComplete,
   );
 
+router.route("/matches")
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER),
+    UserController.userMatchingUsers,
+  );
+
+router.route("/:id")
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER),
+    UserController.getSingleUser,
+  );
+
 export const UserRoutes = router;

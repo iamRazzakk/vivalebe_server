@@ -8,6 +8,8 @@ import { emailTemplate } from "../../../shared/emailTemplate";
 import { emailProducer } from "../../../services/email.producer";
 import { randomUUID } from "crypto";
 import { dataStoreToRedis } from "../../../redis/redis.store";
+import QueryBuilder from "../../builder/queryBuilder";
+import { Viewme } from "../viewme/viewme.model";
 
 
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
@@ -117,9 +119,91 @@ const updateOnboardingCompleteToDB = async (user: JwtPayload, payload: Partial<I
   return updateDoc;
 };
 
+
+// get matching users from DB base on filters
+const userMatchingUsersFromDB = async (
+  user: JwtPayload,
+  filters: Record<string, unknown>
+) => {
+  const query = { ...filters };
+
+  // Age -> DOB Range
+  if (query.ageFrom || query.ageTo) {
+    const today = new Date();
+    const dobFilter: Record<string, Date> = {};
+
+    if (query.ageTo) {
+      // Oldest date
+      dobFilter.$gte = new Date(
+        today.getFullYear() - Number(query.ageTo),
+        today.getMonth(),
+        today.getDate()
+      );
+    }
+
+    if (query.ageFrom) {
+      // Youngest date
+      dobFilter.$lte = new Date(
+        today.getFullYear() - Number(query.ageFrom),
+        today.getMonth(),
+        today.getDate()
+      );
+    }
+
+    query.DOB = dobFilter;
+
+    delete query.ageFrom;
+    delete query.ageTo;
+  }
+
+  const queryBuilder = new QueryBuilder<IUser>(
+    User.find({
+      _id: { $ne: user.id },
+    }),
+    query
+  )
+    .filter()
+    .sort()
+    .paginate();
+
+  const [users, meta] = await Promise.all([
+    queryBuilder.modelQuery.lean(),
+    queryBuilder.getPaginationInfo(),
+  ]);
+
+  return {
+    users,
+    meta,
+  };
+};
+
+
+// get user base on id
+
+const getSingleUserFromDB = async (userId: JwtPayload, id: string) => {
+  const user = await User.findById(id).lean();
+  if (!user) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+  await Viewme.findOneAndUpdate(
+    {
+      user: userId.id,
+      viewedUser: id,
+    },
+    {},
+    {
+      upsert: true,
+      new: true,
+    }
+  );
+  return user;
+};
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
   updateProfileToDB,
-  updateOnboardingCompleteToDB
+  updateOnboardingCompleteToDB,
+  userMatchingUsersFromDB,
+  getSingleUserFromDB
 };

@@ -59,9 +59,33 @@ const updateOnboardingComplete = catchAsync(async (req: Request, res: Response) 
   });
 });
 
+
+const userMatchingUsers = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.userMatchingUsersFromDB(req.user, req.query);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Matching users fetched successfully",
+    data: result.users,
+    pagination: result.meta,
+  });
+});
+
+const getSingleUser = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.getSingleUserFromDB(req.user, req.params.id);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "User fetched successfully",
+    data: result,
+  });
+});
+
 export const UserController = {
   createUser,
   getUserProfile,
   updateProfile,
   updateOnboardingComplete,
+  userMatchingUsers,
+  getSingleUser,
 };

@@ -75,10 +75,12 @@ const userSchema = new Schema<IUser, UserModal>(
     country: {
       type: String,
       required: false,
+      lowercase: true,
     },
     state: {
       type: String,
       required: false,
+      lowercase: true,
     },
 
     zidCode: {
@@ -90,7 +92,7 @@ const userSchema = new Schema<IUser, UserModal>(
       required: false,
     },
     DOB: {
-      type: String,
+      type: Date,
       required: false,
     },
     livingWith: {
@@ -101,6 +103,7 @@ const userSchema = new Schema<IUser, UserModal>(
     displayName: {
       type: String,
       required: false,
+      lowercase: true,
     },
     height: {
       type: Number,
@@ -140,23 +143,6 @@ const userSchema = new Schema<IUser, UserModal>(
       type: Boolean,
       default: false,
     },
-    // authentication: {
-    //   type: {
-    //     isResetPassword: {
-    //       type: Boolean,
-    //       default: false,
-    //     },
-    //     oneTimeCode: {
-    //       type: Number,
-    //       default: null,
-    //     },
-    //     expireAt: {
-    //       type: Date,
-    //       default: null,
-    //     },
-    //   },
-    //   select: 0,
-    // },
     accountInformation: {
       status: {
         type: Boolean,
@@ -181,9 +167,8 @@ const userSchema = new Schema<IUser, UserModal>(
   },
 );
 // for fast lookup
-// userSchema.index({ email: 1 });
-// if filtering by role often
 userSchema.index({ role: 1 });
+userSchema.index({ lookingFor: 1, country: 1, state: 1, DOB: 1 });
 //exist user check
 userSchema.statics.isExistUserById = async (id: string) => {
   const isExist = await User.findById(id);

@@ -21,7 +21,7 @@ const createPostToDB = async (payload: IPosts, user: JwtPayload) => {
 
 
 
-
+// need to  implement newest posts and popular posts base on query.
 const getAllPostsFromDB = async (query: Record<string, unknown>) => {
     const queryBuilder = new QueryBuilder<IPosts>(Posts.find(), query)
         .filter()
@@ -36,4 +36,23 @@ const getAllPostsFromDB = async (query: Record<string, unknown>) => {
 };
 
 
-export const PostsServices = { createPostIndoDB, createPostToDB, getAllPostsFromDB };
+// get user posts 
+const getPostsByUserFromDB = async (query: Record<string, unknown>, user: JwtPayload) => {
+    const queryBuilder = new QueryBuilder<IPosts>(Posts.find({ user: user?.id }), query)
+        .filter()
+        .sort()
+        .paginate();
+    const [posts, meta] = await Promise.all([
+        queryBuilder.modelQuery.lean(),
+        queryBuilder.getPaginationInfo()
+    ]);
+    return { posts, meta };
+};
+
+
+const getSinglePostFromDB = async (id: string) => {
+    return await Posts.findById(id).lean();
+};
+
+
+export const PostsServices = { createPostIndoDB, createPostToDB, getAllPostsFromDB, getPostsByUserFromDB, getSinglePostFromDB };
