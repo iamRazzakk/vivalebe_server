@@ -5,13 +5,14 @@ import redisClient from "../config/redis.config";
 
 export const dataStoreToRedis =
     async (key: string, value: string, expiration: number) => {
-        await redisClient.set(key, value, "EX", expiration);
+        await redisClient.set(key, value, "PX", expiration);
     };
 
 
 
 export const dataGetFromRedis = async (key: string) => {
-    return await redisClient.get(key);
+    const data = await redisClient.get(key);
+    return data ? JSON.parse(data) : null;
 };
 
 // delete data from redis

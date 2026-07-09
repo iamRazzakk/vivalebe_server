@@ -25,6 +25,12 @@ const UPLOAD_CONFIG: Record<string, UploadConfigItem> = {
     maxCount: 3,
     maxSize: 20 * 1024 * 1024, // 20MB
   },
+  content: {
+    folder: "content",
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/jpg", "video/mp4", "audio/mpeg"],
+    maxCount: 10,
+    maxSize: 50 * 1024 * 1024 * 1024, // 50GB
+  },
   doc: {
     folder: "docs",
     allowedMimeTypes: ["application/pdf", "application/msword"],
@@ -101,8 +107,7 @@ const fileFilter = (
     return cb(
       new ApiError(
         StatusCodes.BAD_REQUEST,
-        `Invalid file type for ${
-          file.fieldname
+        `Invalid file type for ${file.fieldname
         }. Allowed: ${config.allowedMimeTypes.join(", ")}`,
       ),
     );

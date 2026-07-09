@@ -74,11 +74,14 @@ const forgetPasswordToDB = async (email: string) => {
   emailHelper.sendEmail(forgetPassword);
 
   //save to DB
-  const authentication = {
+  await dataStoreToRedis(`authentication:${isExistUser.email.toString()}`, JSON.stringify({
+    email: isExistUser?.email,
     oneTimeCode: otp,
     expireAt: new Date(Date.now() + 3 * 60000),
-  };
-  await User.findOneAndUpdate({ email }, { $set: { authentication } });
+  }), 3 * 60 * 1000);
+  return {
+    message: "Please check your email, we send a OTP!",
+  }
 };
 
 //verify email
@@ -88,51 +91,30 @@ const verifyEmailToDB = async (payload: IVerifyEmail) => {
   if (!isExistUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
-  const authentication = await dataGetFromRedis(`authentication:${isExistUser.email.toString()}`);
+  const authentication = await dataGetFromRedis(`authentication:${isExistUser?.email?.toString()}`);
   if (!authentication) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid otp!");
   }
-  const authenticationData = JSON.parse(authentication);
-  if (authenticationData.oneTimeCode !== oneTimeCode) {
+  if (authentication?.oneTimeCode !== oneTimeCode) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid otp!");
   }
-
-  await dataStoreToRedis(`authentication:${isExistUser.email.toString()}`, JSON.stringify({
-    oneTimeCode: null,
-    expireAt: null,
-  }), 0);
-
-  // const date = new Date();
-  // if (date > isExistUser.authentication?.expireAt) {
-  //   throw new ApiError(
-  //     StatusCodes.BAD_REQUEST,
-  //     "Otp already expired, Please try again",
-  //   );
-  // }
 
   let message;
   let data;
 
   if (!isExistUser.verified) {
-    // await User.findOneAndUpdate(
-    //   { _id: isExistUser._id },
-    //   { verified: true, authentication: { oneTimeCode: null, expireAt: null } },
-    // );
     await User.findOneAndUpdate({ email }, { verified: true });
+    await dataDeleteFromRedis(`authentication:${isExistUser.email.toString()}`);
     await dataDeleteFromRedis(`authentication:${isExistUser.email.toString()}`);
     message = "Email verify successfully";
     data = isExistUser?.onboardingComplete;
   } else {
-    // await User.findOneAndUpdate(
-    //   { _id: isExistUser._id },
-    //   {
-    //     authentication: {
-    //       isResetPassword: true,
-    //       oneTimeCode: null,
-    //       expireAt: null,
-    //     },
-    //   },
-    // );
+    await User.findOneAndUpdate(
+      { _id: isExistUser._id },
+      {
+        isResetPassword: true,
+      },
+    );
 
     //create token ;
     const createToken = cryptoToken();
@@ -141,6 +123,7 @@ const verifyEmailToDB = async (payload: IVerifyEmail) => {
       token: createToken,
       expireAt: new Date(Date.now() + 5 * 60000),
     });
+    await dataDeleteFromRedis(`authentication:${isExistUser.email.toString()}`);
     message =
       "Verification Successful: Please securely store and utilize this code for reset password";
     data = createToken;
@@ -316,70 +299,13 @@ const resendVerificationEmailToDB = async (email: string) => {
   const accountEmailTemplate = emailTemplate.createAccount(emailValues);
   emailHelper.sendEmail(accountEmailTemplate);
 
-  // Update user with authentication details
-  const authentication = {
+  await dataStoreToRedis(`authentication:${existingUser.email.toString()}`, JSON.stringify({
+    email: existingUser?.email,
     oneTimeCode: otp,
     expireAt: new Date(Date.now() + 3 * 60000),
-  };
-
-  await User.findOneAndUpdate(
-    { email: email },
-    { $set: { authentication } },
-    { new: true },
-  );
+  }), 3 * 60 * 1000);
 };
 
-// social authentication
-// const socialLoginFromDB = async (payload: IUser) => {
-
-//     const { appId, role } = payload;
-
-//     const isExistUser = await User.findOne({ appId });
-
-//     if (isExistUser) {
-
-//         //create token
-//         const accessToken = jwtHelper.createToken(
-//             { id: isExistUser._id, role: isExistUser.role },
-//             config.jwt.jwt_secret as Secret,
-//             config.jwt.jwt_expire_in as string
-//         );
-
-//         //create token
-//         const refreshToken = jwtHelper.createToken(
-//             { id: isExistUser._id, role: isExistUser.role },
-//             config.jwt.jwtRefreshSecret as Secret,
-//             config.jwt.jwtRefreshExpiresIn as string
-//         );
-
-//         return { accessToken, refreshToken };
-
-//     } else {
-
-//         const user = await User.create({ appId, role, verified: true });
-//         if (!user) {
-//             throw new ApiError(StatusCodes.BAD_REQUEST, "Failed to created User")
-//         }
-
-//         //create token
-//         const accessToken = jwtHelper.createToken(
-//             { id: user._id, role: user.role },
-//             config.jwt.jwt_secret as Secret,
-//             config.jwt.jwt_expire_in as string
-//         );
-
-//         //create token
-//         const refreshToken = jwtHelper.createToken(
-//             { id: user._id, role: user.role },
-//             config.jwt.jwtRefreshSecret as Secret,
-//             config.jwt.jwtRefreshExpiresIn as string
-//         );
-
-//         return { accessToken, refreshToken };
-//     }
-// }
-
-// delete user
 // delete user
 const deleteUserFromDB = async (user: JwtPayload, password: string) => {
   const isExistUser = await User.findById(user.id).select("+password");
