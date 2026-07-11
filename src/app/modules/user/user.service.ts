@@ -48,9 +48,7 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   };
 
   await emailProducer.sendEmailEvent(emailData);
-  //save to DB
-
-  // need to store this in redis not the DB
+  // store in redis instead of DB
   const result = await dataStoreToRedis(
     `authentication:${createUser.email.toString()}`,
     JSON.stringify({
@@ -60,16 +58,6 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
     }),
     3 * 60 * 1000
   );
-
-  // const authentication = {
-  //   oneTimeCode: otp,
-  //   expireAt: new Date(Date.now() + 3 * 60000),
-  // };
-
-  // await User.findOneAndUpdate(
-  //   { _id: createUser._id },
-  //   { $set: { authentication } },
-  // );
 
   return createUser;
 };
