@@ -23,8 +23,8 @@ const getAllLikesByPost = catchAsync(async (req: Request, res: Response) => {
         statusCode: StatusCodes.OK,
         success: true,
         message: "Likes fetched successfully",
-        pagination: likes.meta.meta,
-        data: likes.meta.data,
+        pagination: likes.meta,
+        data: likes.data,
     });
 });
 

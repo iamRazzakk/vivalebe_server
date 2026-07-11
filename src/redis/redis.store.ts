@@ -59,6 +59,15 @@ export const bufferLike = async (userId: string, postId: string) => {
 /** Unlike: remove from post set; if still pending add → just cancel; else queue DB remove */
 export const bufferUnlike = async (userId: string, postId: string) => {
     const member = memberKey(userId, postId);
+
+    const alreadyPendingRemove = await redisClient.sismember(PENDING_REMOVE, member);
+    if (alreadyPendingRemove === 1) {
+        // already unliked — don't DECR again
+        await redisClient.srem(postLikeKey(postId), userId);
+        await redisClient.srem(PENDING_ADD, member);
+        return;
+    }
+
     const wasPendingAdd = await redisClient.sismember(PENDING_ADD, member);
     const pipeline = redisClient.pipeline();
     pipeline.srem(postLikeKey(postId), userId);
@@ -122,13 +131,38 @@ export const warmPostLikes = async (postId: string, userIds: string[]) => {
 
 export const getLikeCountDeltas = async (postIds: string[]) => {
     if (!postIds.length) return {} as Record<string, number>;
-  
+
     const keys = postIds.map(likeCountDeltaKey);
     const values = await redisClient.mget(...keys);
-  
+
     const map: Record<string, number> = {};
     postIds.forEach((id, i) => {
-      map[id] = values[i] ? Number(values[i]) : 0;
+        map[id] = values[i] ? Number(values[i]) : 0;
     });
     return map;
-  };
+};
+
+export const getPendingAddUserIdsForPost = async (postId: string) => {
+    const members = await redisClient.smembers(PENDING_ADD);
+    return members
+        .map(parseLikeMember)
+        .filter((m): m is { userId: string; postId: string } => !!m && m.postId === postId)
+        .map((m) => m.userId);
+};
+/** Unlikes waiting to be deleted from DB */
+export const getPendingRemoveUserIdsForPost = async (postId: string) => {
+    const members = await redisClient.smembers(PENDING_REMOVE);
+    return members
+        .map(parseLikeMember)
+        .filter((m): m is { userId: string; postId: string } => !!m && m.postId === postId)
+        .map((m) => m.userId);
+};
+
+
+export const isPendingRemove = async (userId: string, postId: string) => {
+    const result = await redisClient.sismember(
+        PENDING_REMOVE,
+        memberKey(userId, postId),
+    );
+    return result === 1;
+};
