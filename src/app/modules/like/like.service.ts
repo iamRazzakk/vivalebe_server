@@ -4,7 +4,7 @@ import { Like } from './like.model';
 import { Posts } from '../posts/posts.model';
 import ApiError from '../../../errors/ApiErrors';
 import { StatusCodes } from 'http-status-codes';
-import { applyFlushedCountDeltas, bufferLike, bufferUnlike, clearFlushedPending, getPendingLikes, isLikedInRedis, parseLikeMember } from '../../../redis/redis.store';
+import { applyFlushedCountDeltas, bufferLike, bufferUnlike, clearFlushedPending, getLikeCountDelta, getPendingLikes, isLikedInRedis, parseLikeMember } from '../../../redis/redis.store';
 import { logger } from '../../../shared/logger';
 import { Types } from 'mongoose';
 import QueryBuilder from '../../builder/queryBuilder';
@@ -14,37 +14,43 @@ import QueryBuilder from '../../builder/queryBuilder';
 const createLike = async (payload: ILike, user: JwtPayload) => {
     const userId = user.id;
     const { postId } = payload;
+    const postIdStr = postId.toString();
 
-    const post = await Posts.findById(postId).select("_id").lean();
-
+    const post = await Posts.findById(postId).select('_id likeCount').lean();
     if (!post) {
-        throw new ApiError(StatusCodes.NOT_FOUND, "User removed this post");
+        throw new ApiError(StatusCodes.NOT_FOUND, 'User removed this post');
     }
 
-    const likedInRedis = await isLikedInRedis(userId.toString(), postId.toString());
+    const likedInRedis = await isLikedInRedis(userId.toString(), postIdStr);
     if (likedInRedis) {
-        await bufferUnlike(userId.toString(), (postId as unknown as string));
+        await bufferUnlike(userId.toString(), postIdStr);
+        const delta = await getLikeCountDelta(postIdStr);
         return {
             isLiked: false,
-            message: "Like removed successfully",
+            message: 'Like removed successfully',
+            likeCount: (post.likeCount || 0) + delta,
             data: null,
         };
     }
+
     const existingInDb = await Like.exists({ userId, postId });
-
     if (existingInDb) {
-        await bufferUnlike(userId, postId.toString());
+        await bufferUnlike(userId.toString(), postIdStr);
+        const delta = await getLikeCountDelta(postIdStr);
         return {
             isLiked: false,
-            message: "Like removed successfully",
+            message: 'Like removed successfully',
+            likeCount: (post.likeCount || 0) + delta,
             data: null,
         };
     }
 
-    await bufferLike(userId, postId.toString());
+    await bufferLike(userId.toString(), postIdStr);
+    const delta = await getLikeCountDelta(postIdStr);
     return {
         isLiked: true,
-        message: "Liked successfully",
+        message: 'Liked successfully',
+        likeCount: (post.likeCount || 0) + delta,
         data: { userId, postId },
     };
 };

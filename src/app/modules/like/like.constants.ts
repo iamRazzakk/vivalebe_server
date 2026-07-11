@@ -1,1 +1,1 @@
-export const LIKE_FLUSH_CRON = "*/2 * * * *";
+export const LIKE_FLUSH_CRON = "*/1 * * * *";

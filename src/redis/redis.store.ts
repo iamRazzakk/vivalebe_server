@@ -119,3 +119,16 @@ export const warmPostLikes = async (postId: string, userIds: string[]) => {
     if (!userIds.length) return;
     await redisClient.sadd(postLikeKey(postId), ...userIds);
 };
+
+export const getLikeCountDeltas = async (postIds: string[]) => {
+    if (!postIds.length) return {} as Record<string, number>;
+  
+    const keys = postIds.map(likeCountDeltaKey);
+    const values = await redisClient.mget(...keys);
+  
+    const map: Record<string, number> = {};
+    postIds.forEach((id, i) => {
+      map[id] = values[i] ? Number(values[i]) : 0;
+    });
+    return map;
+  };
