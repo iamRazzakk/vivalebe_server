@@ -1,19 +1,49 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { CommentsServices } from './comments.service';
 import catchAsync from '../../../shared/catchAsync';
 import { JwtPayload } from 'jsonwebtoken';
 import sendResponse from '../../../shared/sendResponse';
 import { StatusCodes } from 'http-status-codes';
+import { getChannel } from '../../../config/rabbitmq';
+import { v4 as uuidv4 } from 'uuid';
 
+const COMMENT_QUEUE = "comment_processing_queue";
 
 const createComments = catchAsync(async (req: Request, res: Response) => {
+    const user = req.user as JwtPayload;
+    const trackingId = req.body.trackingId || uuidv4();
 
-    const result = await CommentsServices.createCommentsIntoDB(req.body, req.user);
+    const payload = {
+        comment: req.body.comment,
+        postId: req.body.postId,
+        userId: user.id,
+        trackingId,
+    };
+
+    const channel = await getChannel();
+    await channel.assertQueue(COMMENT_QUEUE, { durable: true });
+    channel.sendToQueue(COMMENT_QUEUE, Buffer.from(JSON.stringify(payload)), {
+        persistent: true,
+        messageId: trackingId,
+    });
+
     sendResponse(res, {
-        statusCode: StatusCodes.CREATED,
+        statusCode: StatusCodes.ACCEPTED,
         success: true,
-        message: "Comments created successfully",
-        data: result,
+        message: "Comment submission accepted",
+        data: { trackingId },
+    });
+});
+
+const getCommentsByPostId = catchAsync(async (req: Request, res: Response) => {
+    const { postId } = req.params;
+    const result = await CommentsServices.getCommentsByPostId(postId, req.query);
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "Comments fetched successfully",
+        data: result.data,
+        pagination: result.meta,
     });
 });
 
@@ -39,8 +69,10 @@ const deleteComments = catchAsync(async (req: Request, res: Response) => {
         data: result,
     });
 });
+
 export const CommentsController = {
     createComments,
+    getCommentsByPostId,
     updateComments,
     deleteComments,
 };
