@@ -46,6 +46,7 @@ export type IUser = {
   education: educationEnum;
   relationStatus: relationStatusEnum;
   bio: string;
+  premiumMembership: boolean;
 
 
   verified: boolean;
