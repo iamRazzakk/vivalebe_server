@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import { getChannel } from "../config/rabbitmq";
 import { Comments } from "../app/modules/comments/comments.model";
 import { Posts } from "../app/modules/posts/posts.model";
@@ -21,44 +20,29 @@ export const startCommentWorker = async () => {
 
         logger.info(`💬 Processing comment for post=${postId} trackingId=${trackingId}`);
 
-        const session = await mongoose.startSession();
         try {
-            session.startTransaction();
-
-            // 1. Create the comment inside the transaction
-            const [newComment] = await Comments.create(
-                [
-                    {
-                        comment,
-                        postId,
-                        userId,
-                        isPublish: true,
-                    },
-                ],
-                { session }
-            );
-
-            // 2. Atomically increment commentCount of the target Post
-            const updatedPost = await Posts.findOneAndUpdate(
-                { _id: postId },
-                { $inc: { commentCount: 1 } },
-                { session, new: true }
-            );
-
-            if (!updatedPost) {
+            // Standalone MongoDB does not support multi-doc transactions
+            // (requires replica set / mongos). Do sequential ops instead.
+            const post = await Posts.findById(postId).select("_id").lean();
+            if (!post) {
                 throw new Error(`Post not found: ${postId}`);
             }
 
-            await session.commitTransaction();
-            session.endSession();
+            const newComment = await Comments.create({
+                comment,
+                postId,
+                userId,
+                isPublish: true,
+            });
+
+            await Posts.findByIdAndUpdate(postId, { $inc: { commentCount: 1 } });
 
             logger.info(`✅ Comment saved & Post counter incremented: commentId=${newComment._id}`);
 
-            // 3. Cache-aside update: update Redis list if cached
+            // Cache-aside update: update Redis list if cached
             const redisKey = `comments:${postId}`;
             const exists = await redisClient.exists(redisKey);
             if (exists) {
-                // Populate the comment user field to match retrieval schema
                 const populatedComment = await Comments.findById(newComment._id)
                     .populate("userId", { name: 1, email: 1, profile: 1 })
                     .lean();
@@ -75,14 +59,8 @@ export const startCommentWorker = async () => {
 
             channel.ack(msg);
         } catch (error) {
-            // Abort transactional operations
-            if (session.inTransaction()) {
-                await session.abortTransaction();
-            }
-            session.endSession();
-
             logger.error(`❌ Error processing comment for post=${postId} trackingId=${trackingId}:`, error);
-            
+
             // Acknowledge message on error to prevent blocking the queue with poisoned messages
             channel.ack(msg);
         }

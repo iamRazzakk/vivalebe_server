@@ -131,6 +131,10 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       required: false,
     },
+    premiumMembership: {
+      type: Boolean,
+      default: false,
+    },
     isBanned: {
       type: Boolean,
       default: false,

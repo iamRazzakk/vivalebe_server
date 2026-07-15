@@ -31,7 +31,7 @@ const createComments = catchAsync(async (req: Request, res: Response) => {
         statusCode: StatusCodes.ACCEPTED,
         success: true,
         message: "Comment submission accepted",
-        data: { trackingId },
+        data: payload,
     });
 });
 
