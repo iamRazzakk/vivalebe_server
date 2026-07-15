@@ -17,4 +17,17 @@ const createWink = catchAsync(async (req: Request, res: Response, next: NextFunc
         data: wink,
     });
 });
-export const WinkController = { createWink };
+
+
+const getSingleWink = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const wink = await WinkServices.getSingleWinkFromDB(req.params.id);
+    sendResponse(res, {
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Wink fetched successfully',
+        data: wink,
+    });
+});
+
+
+export const WinkController = { createWink, getSingleWink };
