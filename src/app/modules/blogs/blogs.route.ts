@@ -1,0 +1,48 @@
+import express, { NextFunction, Request, Response } from "express";
+import { BlogsController } from "./blogs.controller";
+import auth from "../../middlewares/auth";
+import { USER_ROLES } from "../../../enums/user";
+import {
+  getSingleFilePath,
+  getUploadFields,
+} from "../../middlewares/fileUploaderHandlar";
+
+const router = express.Router();
+
+router
+  .route("/")
+  .post(
+    auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+    getUploadFields(),
+    async (req: Request, _res: Response, next: NextFunction) => {
+      try {
+        const data = req.body;
+        const imageUrl = getSingleFilePath(
+          req.files as Record<string, Express.Multer.File[]>,
+          "imageUrl",
+        );
+        if (imageUrl) {
+          data.imageUrl = imageUrl;
+        }
+        req.body = data;
+        next();
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    BlogsController.createBlog,
+  )
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+    BlogsController.getAllBlogs,
+  );
+
+// router
+//   .route("/:id")
+//   .get(
+//     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+//     BlogsController.getSingleBlog,
+//   );
+
+export const BlogsRoutes = router;

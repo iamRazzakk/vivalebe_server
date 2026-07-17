@@ -25,6 +25,12 @@ const UPLOAD_CONFIG: Record<string, UploadConfigItem> = {
     maxCount: 3,
     maxSize: 20 * 1024 * 1024, // 20MB
   },
+  imageUrl: {
+    folder: "image",
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/jpg", "image/webp", "image/gif", "image/svg+xml", "image/tiff", "image/bmp", "image/ico", "image/webp", "image/avif", "image/heic", "image/heif", "image/heif-sequence", "image/heic-sequence", "image/heif-sequence", "image/heic-sequence"],
+    maxCount: 3,
+    maxSize: 20 * 1024 * 1024, // 20MB
+  },
   content: {
     folder: "content",
     allowedMimeTypes: ["image/jpeg", "image/png", "image/jpg", "video/mp4", "audio/mpeg"],

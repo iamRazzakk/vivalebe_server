@@ -24,7 +24,7 @@ const loginUserFromDB = async (payload: ILoginData) => {
 
   const user = await User.findOne({ email }).select("+password");
   if (!user) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Couldn't find this user!");
   }
   // Verified check
   if (!user.verified) {
