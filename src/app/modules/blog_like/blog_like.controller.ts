@@ -13,14 +13,31 @@ const createBlogLike = catchAsync(
     sendResponse(res, {
       success: true,
       statusCode: StatusCodes.OK,
-      message: (data as any).liked
-        ? "Blog liked successfully"
-        : "Blog unliked successfully",
+      message: (data as any).message
+        ? "Blog unliked successfully"
+        : "Blog liked successfully",
       data: data,
+    });
+  },
+);
+
+const getBlogLikes = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const data = await BlogLikeServices.getBlogLikesFromDB(
+      req.params.id,
+      req.query,
+    );
+    sendResponse(res, {
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "Blog likes fetched successfully",
+      pagination: data.meta,
+      data: data.data,
     });
   },
 );
 
 export const BlogLikeController = {
   createBlogLike,
+  getBlogLikes,
 };
