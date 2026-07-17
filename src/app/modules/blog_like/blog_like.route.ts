@@ -7,6 +7,12 @@ const router = express.Router();
 
 router
   .route("/:id")
-  .post(auth(USER_ROLES.USER), BlogLikeController.createBlogLike);
-
+  .post(
+    auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    BlogLikeController.createBlogLike,
+  )
+  .get(
+    auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    BlogLikeController.getBlogLikes,
+  );
 export const BlogLikeRoutes = router;
