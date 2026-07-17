@@ -8,3 +8,5 @@ SECURITY.md
 *questions.md
 *.log*
 build
+
+.vscode
