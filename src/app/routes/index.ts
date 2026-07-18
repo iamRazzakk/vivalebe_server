@@ -8,6 +8,7 @@ import { WinkRoutes } from "../modules/wink/wink.route";
 import { BlogsRoutes } from "../modules/blogs/blogs.route";
 import { BlogCommentsRoutes } from "../modules/blogcomments/blogcomments.route";
 import { BlogLikeRoutes } from "../modules/blog_like/blog_like.route";
+import { EventsRoutes } from "../modules/events/events.route";
 const router = Router();
 
 const apiRoutes = [
@@ -20,6 +21,7 @@ const apiRoutes = [
   { path: "/blogs", route: BlogsRoutes },
   { path: "/blog-comments", route: BlogCommentsRoutes },
   { path: "/blog-likes", route: BlogLikeRoutes },
+  { path: "/events", route: EventsRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));
