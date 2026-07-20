@@ -14,6 +14,7 @@ import { bootstrap } from "./handlers/rabbitmq.wrapper";
 import ApiError from "./errors/ApiErrors";
 import { StatusCodes } from "http-status-codes";
 import { startLikeFlushJob } from "./jobs/like.flush";
+import { startSubscriptionExpiryJob } from "./jobs/subscription.expiry";
 
 //uncaught exception
 process.on("uncaughtException", (error) => {
@@ -28,7 +29,7 @@ async function main() {
     // create super admin
     seedSuperAdmin();
     startLikeFlushJob();
-
+    startSubscriptionExpiryJob();
     const redisConnected = await RedisClient.connect();
     if (!redisConnected) {
       throw new ApiError(

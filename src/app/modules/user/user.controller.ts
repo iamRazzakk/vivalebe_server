@@ -81,6 +81,15 @@ const getSingleUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const insertBulkUsers = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.insertBulkUsersToDB(req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Users inserted successfully",
+    data: result,
+  });
+});
 export const UserController = {
   createUser,
   getUserProfile,
@@ -88,4 +97,5 @@ export const UserController = {
   updateOnboardingComplete,
   userMatchingUsers,
   getSingleUser,
+  insertBulkUsers,
 };

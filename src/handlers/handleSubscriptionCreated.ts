@@ -1,76 +1,105 @@
-import { StatusCodes } from 'http-status-codes';
-import Stripe from 'stripe';
-import ApiError from '../errors/ApiErrors';
-import stripe from '../config/stripe';
-const User:any = "";
-const PricingPlan:any = "";
-const Subscription:any = "";
+import { StatusCodes } from "http-status-codes";
+import Stripe from "stripe";
+import ApiError from "../errors/ApiErrors";
+import stripe from "../config/stripe";
+import { User } from "../app/modules/user/user.model";
+import { Package } from "../app/modules/package/package.model";
+import { Subscription } from "../app/modules/subscription/subscription.model";
 
 export const handleSubscriptionCreated = async (data: Stripe.Subscription) => {
+  const subscription = await stripe.subscriptions.retrieve(data.id);
+  const customer = (await stripe.customers.retrieve(
+    subscription.customer as string,
+  )) as Stripe.Customer;
 
-    // Retrieve the subscription from Stripe
-    const subscription = await stripe.subscriptions.retrieve(data.id);
+  const priceId = subscription.items.data[0]?.price?.id;
+  const productId = subscription.items.data[0]?.price?.product as string;
 
-    // Retrieve the customer associated with the subscription
-    const customer = (await stripe.customers.retrieve( subscription.customer as string)) as Stripe.Customer;
+  if (!customer?.email) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "No email found for the customer!",
+    );
+  }
 
-    // Extract the price ID from the subscription items
-    const priceId = subscription.items.data[0]?.price?.id;
+  const existingUser = await User.findOne({ email: customer.email });
+  if (!existingUser) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Invalid User!");
+  }
 
-    // Retrieve the invoice to get the transaction ID and amount paid
-    const invoice = await stripe.invoices.retrieve(subscription.latest_invoice as string);
+  const pricingPlan =
+    (priceId && (await Package.findOne({ priceId }))) ||
+    (productId && (await Package.findOne({ productId })));
 
-    const trxId = invoice?.payment_intent;
-    const amountPaid = invoice?.total / 100;
+  if (!pricingPlan) {
+    throw new ApiError(
+      StatusCodes.NOT_FOUND,
+      `Package not found for priceId: ${priceId}`,
+    );
+  }
 
-    if (customer?.email) {
-        
-        const existingUser = await User.findOne({ email: customer?.email });
-    
-        if (existingUser) {
-            // Find the pricing plan by priceId
-            const pricingPlan = await PricingPlan.findOne({ priceId });
-    
-            if (pricingPlan) {
+  const currentActiveSubscription = await Subscription.findOne({
+    user: existingUser._id,
+    status: "active",
+  }).populate("package");
 
-                // Find the current active subscription
-                const currentActiveSubscription = await Subscription.findOne({
-                    userId: existingUser._id,
-                    status: 'active',
-                });
-    
-                if (currentActiveSubscription) {
-                    throw new ApiError(StatusCodes.CONFLICT,'User already has an active subscription.');
-                }
-    
-                // Create a new subscription record
-                const newSubscription = new Subscription({
-                    userId: existingUser._id,
-                    customerId: customer?.id,
-                    packageId: pricingPlan._id,
-                    status: 'active',
-                    amountPaid,
-                    trxId,
-                });
-    
-                await newSubscription.save();
-        
-                // Update the user to reflect the active subscription
-                await User.findByIdAndUpdate(
-                    existingUser._id,
-                    {
-                        isSubscribed: true,
-                        hasAccess: true,
-                    },
-                    { new: true },
-                );
-            } else {
-                throw new ApiError(StatusCodes.NOT_FOUND, `Pricing plan with Price ID: ${priceId} not found!`);
-            }
-        } else {
-            throw new ApiError(StatusCodes.NOT_FOUND, `Invalid User!`);
-        }
-    } else {
-        throw new ApiError(StatusCodes.BAD_REQUEST, 'No email found for the customer!');
+  if (currentActiveSubscription) {
+    const currentPackageId = String(
+      (currentActiveSubscription.package as any)?._id ||
+        currentActiveSubscription.package,
+    );
+    const newPackageId = String(pricingPlan._id);
+
+    if (currentPackageId === newPackageId) {
+      // Optionally cancel the duplicate Stripe subscription
+      await stripe.subscriptions.cancel(subscription.id);
+      // Return without throw to avoid Stripe infinite retry
+      return;
     }
-}
+
+    if (currentActiveSubscription.subscriptionId) {
+      await stripe.subscriptions.cancel(
+        currentActiveSubscription.subscriptionId,
+      );
+    }
+    await Subscription.findByIdAndUpdate(currentActiveSubscription._id, {
+      status: "cancel",
+    });
+  }
+
+  const invoice = await stripe.invoices.retrieve(
+    subscription.latest_invoice as string,
+  );
+  const trxId =
+    typeof invoice.payment_intent === "string"
+      ? invoice.payment_intent
+      : (invoice.payment_intent as Stripe.PaymentIntent)?.id || invoice.id;
+
+  const amountPaid = (invoice?.total ?? 0) / 100;
+
+  const newSubscription = await Subscription.create({
+    user: existingUser._id,
+    customerId: customer.id,
+    package: pricingPlan._id,
+    price: amountPaid,
+    trxId,
+    subscriptionId: subscription.id,
+    currentPeriodStart: new Date(
+      subscription.current_period_start * 1000,
+    ).toISOString(),
+    currentPeriodEnd: new Date(
+      subscription.current_period_end * 1000,
+    ).toISOString(),
+    remaining: Math.ceil(
+      (subscription.current_period_end * 1000 - Date.now()) /
+        (1000 * 60 * 60 * 24),
+    ),
+    status: "active",
+  });
+
+  await User.findByIdAndUpdate(existingUser._id, {
+    premiumMembership: true,
+  });
+
+  return newSubscription;
+};

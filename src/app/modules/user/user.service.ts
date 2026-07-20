@@ -187,11 +187,19 @@ const getSingleUserFromDB = async (userId: JwtPayload, id: string) => {
   return user;
 };
 
+
+const insertBulkUsersToDB = async (payload: Partial<IUser>[]) => {
+  const users = await User.insertMany(payload);
+  return users;
+};
+
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
   updateProfileToDB,
   updateOnboardingCompleteToDB,
   userMatchingUsersFromDB,
-  getSingleUserFromDB
+  getSingleUserFromDB,
+  insertBulkUsersToDB,
 };

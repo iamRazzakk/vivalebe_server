@@ -5,7 +5,7 @@ import sendResponse from "../../../shared/sendResponse";
 import { StatusCodes } from "http-status-codes";
 
 const createPackage = catchAsync(async(req: Request, res: Response)=>{
-    const result = await PackageService.createPackageToDB(req.body);
+    const result = await PackageService.createPackageToDB(req.body, req.user);
 
     sendResponse(res, {
         statusCode: StatusCodes.OK,
