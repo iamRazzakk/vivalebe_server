@@ -1,88 +1,97 @@
-import { StatusCodes } from 'http-status-codes';
-import Stripe from 'stripe';
-import ApiError from '../errors/ApiErrors';
-import stripe from '../config/stripe';
-const User:any = "";
-const Subscription:any = "";
-const PricingPlan:any = "";
+import { StatusCodes } from "http-status-codes";
+import Stripe from "stripe";
+import ApiError from "../errors/ApiErrors";
+import stripe from "../config/stripe";
+import { User } from "../app/modules/user/user.model";
+import { Package } from "../app/modules/package/package.model";
+import { Subscription } from "../app/modules/subscription/subscription.model";
 
 export const handleSubscriptionUpdated = async (data: Stripe.Subscription) => {
+  const subscription = await stripe.subscriptions.retrieve(data.id);
+  const customer = (await stripe.customers.retrieve(
+    subscription.customer as string,
+  )) as Stripe.Customer;
 
-    // Retrieve the subscription from Stripe
-    const subscription = await stripe.subscriptions.retrieve(data.id);
-
-    // Retrieve the customer associated with the subscription
-    const customer = (await stripe.customers.retrieve(
-        subscription.customer as string
-    )) as Stripe.Customer;
-
-    // Extract price ID from subscription items
-    const priceId = subscription.items.data[0]?.price?.id;
-
-    // Retrieve the invoice to get the transaction ID and amount paid
-    const invoice = await stripe.invoices.retrieve(
-        subscription.latest_invoice as string,
+  if (!customer?.email) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "No email found for the customer!",
     );
+  }
 
-    const trxId = invoice?.payment_intent;
-    const amountPaid = invoice?.total / 100;
+  const existingUser = await User.findOne({ email: customer.email });
+  if (!existingUser) {
+    throw new ApiError(
+      StatusCodes.NOT_FOUND,
+      `User not found: ${customer.email}`,
+    );
+  }
 
-    if (customer?.email) {
-        // Find the user by email
-        const existingUser = await User.findOne({ email: customer?.email });
-    
-        if (existingUser) {
-            // Find the pricing plan by priceId
-            const pricingPlan = await PricingPlan.findOne({ priceId });
-    
-            if (pricingPlan) {
-                // Find the current active subscription
-                const currentActiveSubscription = await Subscription.findOne({ userId: existingUser?._id, status: 'active'});
-        
-                if (currentActiveSubscription) {
-                    if (
-                        currentActiveSubscription?.packageId?.priceId !==
-                        pricingPlan.priceId
-                    ) {
+  const priceId = subscription.items.data[0]?.price?.id;
+  const productId = subscription.items.data[0]?.price?.product as string;
 
-                    // Deactivate the old subscription
-                    await Subscription.findByIdAndUpdate( currentActiveSubscription._id, { status: 'deactivated' }, { new: true });
-        
-                    // Create a new subscription
-                    const newSubscription = new Subscription({
-                        userId: existingUser._id,
-                        customerId: customer?.id,
-                        packageId: pricingPlan._id,
-                        status: 'active',
-                        trxId,
-                        amountPaid,
-                    });
-        
-                    await newSubscription.save();
-                }
-                } else {
+  const pricingPlan =
+    (priceId && (await Package.findOne({ priceId }))) ||
+    (productId && (await Package.findOne({ productId })));
 
-                    // If no active subscription found, check for a deactivated one with the same priceId
-                    const deactivatedSubscription = await Subscription.findOne({
-                        userId: existingUser._id,
-                        status: 'deactivated',
-                    });
-            
-                    if (deactivatedSubscription) {
-                        await Subscription.findByIdAndUpdate(
-                            deactivatedSubscription._id,
-                            { status: 'active' },
-                            { new: true }
-                        );
-                    }
-                }
-            } else {
-                throw new ApiError(StatusCodes.NOT_FOUND, `Pricing plan with Price ID: ${priceId} not found!`);
-            }
-        } else {
-            throw new ApiError(StatusCodes.NOT_FOUND, `User with Email: ${customer.email} not found!`);
-        }
-    } else {
-        throw new ApiError(StatusCodes.BAD_REQUEST, 'No email found for the customer!');
-    }
-}
+  if (!pricingPlan) {
+    throw new ApiError(
+      StatusCodes.NOT_FOUND,
+      `Package not found for priceId: ${priceId}`,
+    );
+  }
+
+  const existingRecord = await Subscription.findOne({
+    subscriptionId: subscription.id,
+  });
+
+  const invoice = subscription.latest_invoice
+    ? await stripe.invoices.retrieve(subscription.latest_invoice as string)
+    : null;
+
+  const trxId = invoice
+    ? typeof invoice.payment_intent === "string"
+      ? invoice.payment_intent
+      : (invoice.payment_intent as Stripe.PaymentIntent)?.id || invoice.id
+    : existingRecord?.trxId || subscription.id;
+
+  const amountPaid = invoice
+    ? (invoice.total ?? 0) / 100
+    : (existingRecord?.price ?? 0);
+
+  const payload = {
+    user: existingUser._id,
+    customerId: customer.id,
+    package: pricingPlan._id,
+    price: amountPaid,
+    trxId,
+    subscriptionId: subscription.id,
+    currentPeriodStart: new Date(
+      subscription.current_period_start * 1000,
+    ).toISOString(),
+    currentPeriodEnd: new Date(
+      subscription.current_period_end * 1000,
+    ).toISOString(),
+    remaining: Math.ceil(
+      (subscription.current_period_end * 1000 - Date.now()) /
+        (1000 * 60 * 60 * 24),
+    ),
+    status:
+      subscription.status === "active"
+        ? "active"
+        : subscription.status === "canceled"
+          ? "cancel"
+          : "expired",
+  };
+
+  if (existingRecord) {
+    await Subscription.findByIdAndUpdate(existingRecord._id, payload);
+  } else {
+    await Subscription.create(payload);
+  }
+
+  // ✅ Sync user premium status
+  await User.findByIdAndUpdate(existingUser._id, {
+    premiumMembership: subscription.status === "active",
+  });
+};

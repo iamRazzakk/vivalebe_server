@@ -17,6 +17,9 @@ router.get(
   UserController.getUserProfile,
 );
 
+router
+  .route("/bulk")
+  .post(auth(USER_ROLES.SUPER_ADMIN), UserController.insertBulkUsers);
 
 router
   .route("/")
@@ -48,23 +51,23 @@ router
     UserController.updateProfile,
   );
 
-router.route("/onboarding")
+router
+  .route("/onboarding")
   .patch(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER),
     validateRequest(UserValidation.onboardingCompleteZodSchema),
     UserController.updateOnboardingComplete,
   );
 
-router.route("/matches")
+router
+  .route("/matches")
   .get(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER),
     UserController.userMatchingUsers,
   );
 
-router.route("/:id")
-  .get(
-    auth(USER_ROLES.ADMIN, USER_ROLES.USER),
-    UserController.getSingleUser,
-  );
+router
+  .route("/:id")
+  .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER), UserController.getSingleUser);
 
 export const UserRoutes = router;

@@ -10,6 +10,11 @@ import { BlogCommentsRoutes } from "../modules/blogcomments/blogcomments.route";
 import { BlogLikeRoutes } from "../modules/blog_like/blog_like.route";
 import { EventsRoutes } from "../modules/events/events.route";
 import { FirstDateIdeasRoutes } from "../modules/first_date_ideas/first_date_ideas.route";
+import { SwipeRoutes } from "../modules/swipe/swipe.route";
+import { ViewMeRoutes } from "../modules/viewme/viewme.route";
+import { PackageRoutes } from "../modules/package/package.routes";
+import { SubscriptionRoutes } from "../modules/subscription/subscription.routes";
+import { PrivateAlbumRoutes } from "../modules/private_album/private_album.route";
 const router = Router();
 
 const apiRoutes = [
@@ -24,6 +29,11 @@ const apiRoutes = [
   { path: "/blog-likes", route: BlogLikeRoutes },
   { path: "/events", route: EventsRoutes },
   { path: "/first-date-ideas", route: FirstDateIdeasRoutes },
+  { path: "/swipe", route: SwipeRoutes },
+  { path: "/view-me", route: ViewMeRoutes },
+  { path: "/package", route: PackageRoutes },
+  { path: "/subscription", route: SubscriptionRoutes },
+  { path: "/private-albums", route: PrivateAlbumRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));
