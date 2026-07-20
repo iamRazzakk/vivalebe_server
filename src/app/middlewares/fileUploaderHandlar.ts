@@ -27,13 +27,37 @@ const UPLOAD_CONFIG: Record<string, UploadConfigItem> = {
   },
   imageUrl: {
     folder: "image",
-    allowedMimeTypes: ["image/jpeg", "image/png", "image/jpg", "image/webp", "image/gif", "image/svg+xml", "image/tiff", "image/bmp", "image/ico", "image/webp", "image/avif", "image/heic", "image/heif", "image/heif-sequence", "image/heic-sequence", "image/heif-sequence", "image/heic-sequence"],
+    allowedMimeTypes: [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "image/webp",
+      "image/gif",
+      "image/svg+xml",
+      "image/tiff",
+      "image/bmp",
+      "image/ico",
+      "image/webp",
+      "image/avif",
+      "image/heic",
+      "image/heif",
+      "image/heif-sequence",
+      "image/heic-sequence",
+      "image/heif-sequence",
+      "image/heic-sequence",
+    ],
     maxCount: 3,
     maxSize: 20 * 1024 * 1024, // 20MB
   },
   content: {
     folder: "content",
-    allowedMimeTypes: ["image/jpeg", "image/png", "image/jpg", "video/mp4", "audio/mpeg"],
+    allowedMimeTypes: [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "video/mp4",
+      "audio/mpeg",
+    ],
     maxCount: 10,
     maxSize: 50 * 1024 * 1024 * 1024, // 50GB
   },
@@ -45,8 +69,23 @@ const UPLOAD_CONFIG: Record<string, UploadConfigItem> = {
   },
   media: {
     folder: "media",
-    allowedMimeTypes: ["video/mp4", "audio/mpeg"],
-    maxCount: 2,
+    allowedMimeTypes: [
+      "video/mp4",
+      "audio/mpeg",
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "image/webp",
+      "image/gif",
+      "image/svg+xml",
+      "image/tiff",
+      "image/bmp",
+      "image/ico",
+      "image/avif",
+      "image/heic",
+      "image/heif",
+    ],
+    maxCount: 6,
     maxSize: 50 * 1024 * 1024 * 1024, // 50GB
   },
 };
@@ -113,7 +152,8 @@ const fileFilter = (
     return cb(
       new ApiError(
         StatusCodes.BAD_REQUEST,
-        `Invalid file type for ${file.fieldname
+        `Invalid file type for ${
+          file.fieldname
         }. Allowed: ${config.allowedMimeTypes.join(", ")}`,
       ),
     );
