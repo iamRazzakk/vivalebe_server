@@ -9,6 +9,7 @@ import { BlogsRoutes } from "../modules/blogs/blogs.route";
 import { BlogCommentsRoutes } from "../modules/blogcomments/blogcomments.route";
 import { BlogLikeRoutes } from "../modules/blog_like/blog_like.route";
 import { EventsRoutes } from "../modules/events/events.route";
+import { FirstDateIdeasRoutes } from "../modules/first_date_ideas/first_date_ideas.route";
 const router = Router();
 
 const apiRoutes = [
@@ -22,6 +23,7 @@ const apiRoutes = [
   { path: "/blog-comments", route: BlogCommentsRoutes },
   { path: "/blog-likes", route: BlogLikeRoutes },
   { path: "/events", route: EventsRoutes },
+  { path: "/first-date-ideas", route: FirstDateIdeasRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));
