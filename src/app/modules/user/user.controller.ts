@@ -90,6 +90,17 @@ const insertBulkUsers = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+const adminVerifiedUser = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.adminVerifiedUserToDB(req.params.id, req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Admin verified user successfully",
+    data: result,
+  });
+});
+
 export const UserController = {
   createUser,
   getUserProfile,
@@ -98,4 +109,5 @@ export const UserController = {
   userMatchingUsers,
   getSingleUser,
   insertBulkUsers,
+  adminVerifiedUser,
 };

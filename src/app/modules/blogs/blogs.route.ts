@@ -6,6 +6,7 @@ import {
   getSingleFilePath,
   getUploadFields,
 } from "../../middlewares/fileUploaderHandlar";
+import requirePremiumMembership from "../../../helpers/requirePremiumMembership";
 
 const router = express.Router();
 
@@ -13,6 +14,7 @@ router
   .route("/")
   .post(
     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+    requirePremiumMembership,
     getUploadFields(),
     async (req: Request, _res: Response, next: NextFunction) => {
       try {

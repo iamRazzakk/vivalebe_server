@@ -28,6 +28,8 @@ export type IUser = {
   onboardingComplete: boolean;
   status: "ACTIVE" | "DEACTIVE";
   phone: string;
+  protectedImages: string;
+  isAdminVerified: boolean;
 
   // updated data interface
   gender: genderEnum;
@@ -47,7 +49,6 @@ export type IUser = {
   relationStatus: relationStatusEnum;
   bio: string;
   premiumMembership: boolean;
-
 
   verified: boolean;
   isBanned: boolean;
