@@ -10,6 +10,7 @@ import { randomUUID } from "crypto";
 import { dataStoreToRedis } from "../../../redis/redis.store";
 import QueryBuilder from "../../builder/queryBuilder";
 import { Viewme } from "../viewme/viewme.model";
+import { createBlurredImageFromPath } from "../../../shared/protectedFile";
 
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   if (
@@ -175,17 +176,27 @@ const getSingleUserFromDB = async (userId: JwtPayload, id: string) => {
   if (!user) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
+
   await Viewme.findOneAndUpdate(
-    {
-      user: userId.id,
-      viewedUser: id,
-    },
+    { user: id, viewedUser: userId.id },
     {},
-    {
-      upsert: true,
-      new: true,
-    },
+    { upsert: true, new: true },
   );
+
+  const loginUser = await User.findById(userId.id).lean();
+
+  // already has protected image → do nothing
+  if (loginUser && !loginUser.protectedImages && loginUser.profile) {
+    const blurPath = await createBlurredImageFromPath(loginUser.profile);
+    if (blurPath) {
+      await User.findByIdAndUpdate(
+        userId.id,
+        { $set: { protectedImages: blurPath } },
+        { new: true },
+      );
+    }
+  }
+
   return user;
 };
 

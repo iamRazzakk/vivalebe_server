@@ -17,3 +17,28 @@ export const createBlurredImage = async (
   await sharp(file.path).blur(20).toFile(outputPath);
   return `/protected/${blurredFileName}`;
 };
+
+export const createBlurredImageFromPath = async (
+  imagePath: string,
+): Promise<string> => {
+  if (!imagePath || imagePath === "/image.png") return "";
+  const relative = imagePath.replace(/^\//, "").replace(/^uploads\//, "");
+  const inputPath = path.join(process.cwd(), "uploads", relative);
+  if (!fs.existsSync(inputPath)) {
+    console.warn(
+      "Blur skipped — file not found:",
+      inputPath,
+      "from",
+      imagePath,
+    );
+    return "";
+  }
+  if (!fs.existsSync(PROTECTED_DIR)) {
+    fs.mkdirSync(PROTECTED_DIR, { recursive: true });
+  }
+  const filename = path.basename(inputPath);
+  const blurredFileName = `blur-${filename}`;
+  const outputPath = path.join(PROTECTED_DIR, blurredFileName);
+  await sharp(inputPath).blur(20).toFile(outputPath);
+  return `/protected/${blurredFileName}`;
+};
