@@ -16,6 +16,10 @@ const chatSchema = new Schema<IChat, ChatModel>({
     type: String,
     enum: ["single", "group"],
   },
+  groupName: {
+    type: String,
+    required: false,
+  },
 });
 
 export const Chat = model<IChat, ChatModel>("Chat", chatSchema);

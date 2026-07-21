@@ -20,6 +20,7 @@ const createChatToDB = async (
   }
   if (data.chatType === "group") {
     await Promise.all([isAdminVerified(user), requirePremiumMembership]);
+    data.groupName = "Group Chat";
   }
   const chat: IChat = await Chat.create({ participants: payload, ...data });
   return chat;

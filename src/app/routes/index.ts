@@ -17,6 +17,7 @@ import { SubscriptionRoutes } from "../modules/subscription/subscription.routes"
 import { PrivateAlbumRoutes } from "../modules/private_album/private_album.route";
 import { ChatRoutes } from "../modules/chat/chat.routes";
 import { MessageRoutes } from "../modules/message/message.routes";
+import { FeedbackRoutes } from "../modules/feedback/feedback.route";
 const router = Router();
 
 const apiRoutes = [
@@ -38,6 +39,7 @@ const apiRoutes = [
   { path: "/private-albums", route: PrivateAlbumRoutes },
   { path: "/chat", route: ChatRoutes },
   { path: "/message", route: MessageRoutes },
+  { path: "/feedback", route: FeedbackRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));

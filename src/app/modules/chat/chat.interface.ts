@@ -4,6 +4,7 @@ export type IChat = {
   participants: [Types.ObjectId];
   status: Boolean;
   chatType: "single" | "group";
+  groupName?: string;
 };
 
 export type ChatModel = Model<IChat, Record<string, unknown>>;
