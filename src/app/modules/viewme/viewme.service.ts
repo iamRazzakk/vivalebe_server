@@ -17,7 +17,8 @@ const getAllRecentlyViewedMeFromDB = async (
     .sort()
     .fields()
     .populate(["viewedUser"], {
-      viewedUser: "name email profile education weight height religion nationality",
+      viewedUser:
+        "name email profile education weight height religion nationality",
     })
     .paginate();
   const [recentlyViewedMe, meta] = await Promise.all([
@@ -30,6 +31,22 @@ const getAllRecentlyViewedMeFromDB = async (
   };
 };
 
+const getAllViewedMeFromDB = async (user: JwtPayload) => {
+  const qb = await Viewme.find({
+    user: new Types.ObjectId(user.id),
+  }).lean();
+  return qb.length;
+};
+
+const resetViewedMeFromDB = async (user: JwtPayload) => {
+ const result =  await Viewme.deleteMany({
+    user: new Types.ObjectId(user.id),
+  });
+  return result.deletedCount;
+};
+
 export const ViewMeServices = {
   getAllRecentlyViewedMeFromDB,
+  getAllViewedMeFromDB,
+  resetViewedMeFromDB,
 };

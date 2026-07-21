@@ -55,17 +55,24 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       required: false,
     },
+    protectedImages: {
+      type: String,
+      required: false,
+    },
     profile: {
       type: String,
       default: "/image.png",
     },
-
 
     //updated data for profile
     gender: {
       type: String,
       enum: Object.values(genderEnum),
       required: false,
+    },
+    isAdminVerified: {
+      type: Boolean,
+      default: false,
     },
     lookingFor: {
       type: String,

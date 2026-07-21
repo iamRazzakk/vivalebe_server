@@ -20,6 +20,28 @@ const getAllRecentlyViewedMe = catchAsync(
   },
 );
 
+const getAllViewedMe = catchAsync(async (req: Request, res: Response) => {
+  const result = await ViewMeServices.getAllViewedMeFromDB(req.user);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Viewed me fetched successfully",
+    data: result,
+  });
+});
+
+const resetViewedMe = catchAsync(async (req: Request, res: Response) => {
+  const result = await ViewMeServices.resetViewedMeFromDB(req.user!);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Viewed me reset successfully",
+    data: result,
+  });
+});
+
 export const ViewMeController = {
   getAllRecentlyViewedMe,
+  getAllViewedMe,
+  resetViewedMe,
 };

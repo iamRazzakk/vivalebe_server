@@ -8,6 +8,7 @@ import {
   getSingleFilePath,
   getUploadFields,
 } from "../../middlewares/fileUploaderHandlar";
+import { createBlurredImage } from "../../../shared/protectedFile";
 
 const router = express.Router();
 
@@ -26,6 +27,22 @@ router
   .post(
     getUploadFields(),
     validateRequest(UserValidation.createUserZodSchema),
+    async (req, _res, next) => {
+      try {
+        const data = req.body;
+        const imageFiles =
+          (req.files as Record<string, Express.Multer.File[]>)?.image ?? [];
+        if (imageFiles[0]) {
+          data.profile = `/image/${imageFiles[0].filename}`;
+          const blurPath = await createBlurredImage(imageFiles[0]);
+          if (blurPath) data.protectedImages = blurPath;
+        }
+        req.body = data;
+        next();
+      } catch (error) {
+        next(error);
+      }
+    },
     UserController.createUser,
   )
   .patch(
@@ -34,13 +51,15 @@ router
     async (req, _res, next) => {
       try {
         const data = req.body;
-        const profilePath = getSingleFilePath(
-          req.files as Record<string, Express.Multer.File[]>,
-          "image",
-        );
-        if (profilePath) {
-          data.profile = profilePath;
+        const imageFiles =
+          (req.files as Record<string, Express.Multer.File[]>)?.image ?? [];
+
+        if (imageFiles[0]) {
+          data.profile = `/image/${imageFiles[0].filename}`;
+          const blurPath = await createBlurredImage(imageFiles[0]);
+          if (blurPath) data.protectedImages = blurPath;
         }
+
         req.body = data;
         next();
       } catch (error) {
@@ -69,5 +88,9 @@ router
 router
   .route("/:id")
   .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER), UserController.getSingleUser);
+
+router
+  .route("/admin-verified/:id")
+  .patch(auth(USER_ROLES.SUPER_ADMIN), UserController.adminVerifiedUser);
 
 export const UserRoutes = router;

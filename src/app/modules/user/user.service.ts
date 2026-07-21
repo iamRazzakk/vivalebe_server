@@ -11,7 +11,6 @@ import { dataStoreToRedis } from "../../../redis/redis.store";
 import QueryBuilder from "../../builder/queryBuilder";
 import { Viewme } from "../viewme/viewme.model";
 
-
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   if (
     payload?.confirmPassword !== undefined &&
@@ -54,9 +53,9 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
     JSON.stringify({
       email: createUser?.email,
       oneTimeCode: otp,
-      expireAt: new Date(Date.now() + 3 * 60000)
+      expireAt: new Date(Date.now() + 3 * 60000),
     }),
-    3 * 60 * 1000
+    3 * 60 * 1000,
   );
 
   return createUser;
@@ -89,29 +88,33 @@ const updateProfileToDB = async (
   return updateDoc;
 };
 
-
-
-const updateOnboardingCompleteToDB = async (user: JwtPayload, payload: Partial<IUser>) => {
+const updateOnboardingCompleteToDB = async (
+  user: JwtPayload,
+  payload: Partial<IUser>,
+) => {
   const { id } = user;
   const isExistUser = await User.findOne({ _id: id }).lean();
   if (!isExistUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
-  const updateDoc = await User.findOneAndUpdate({ _id: id }, {
-    ...payload,
-    onboardingComplete: true,
-    updatedAt: new Date(),
-  }, {
-    new: true,
-  });
+  const updateDoc = await User.findOneAndUpdate(
+    { _id: id },
+    {
+      ...payload,
+      onboardingComplete: true,
+      updatedAt: new Date(),
+    },
+    {
+      new: true,
+    },
+  );
   return updateDoc;
 };
-
 
 // get matching users from DB base on filters
 const userMatchingUsersFromDB = async (
   user: JwtPayload,
-  filters: Record<string, unknown>
+  filters: Record<string, unknown>,
 ) => {
   const query = { ...filters };
 
@@ -125,7 +128,7 @@ const userMatchingUsersFromDB = async (
       dobFilter.$gte = new Date(
         today.getFullYear() - Number(query.ageTo),
         today.getMonth(),
-        today.getDate()
+        today.getDate(),
       );
     }
 
@@ -134,7 +137,7 @@ const userMatchingUsersFromDB = async (
       dobFilter.$lte = new Date(
         today.getFullYear() - Number(query.ageFrom),
         today.getMonth(),
-        today.getDate()
+        today.getDate(),
       );
     }
 
@@ -148,7 +151,7 @@ const userMatchingUsersFromDB = async (
     User.find({
       _id: { $ne: user.id },
     }),
-    query
+    query,
   )
     .filter()
     .sort()
@@ -164,7 +167,6 @@ const userMatchingUsersFromDB = async (
     meta,
   };
 };
-
 
 // get user base on id
 
@@ -182,17 +184,33 @@ const getSingleUserFromDB = async (userId: JwtPayload, id: string) => {
     {
       upsert: true,
       new: true,
-    }
+    },
   );
   return user;
 };
-
 
 const insertBulkUsersToDB = async (payload: Partial<IUser>[]) => {
   const users = await User.insertMany(payload);
   return users;
 };
 
+const adminVerifiedUserToDB = async (id: string, payload: Partial<IUser>) => {
+  const isExistUser = await User.findOne({ _id: id }).lean();
+  if (!isExistUser) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+  const updateDoc = await User.findOneAndUpdate(
+    { _id: id },
+    {
+      isAdminVerified: payload.isAdminVerified,
+      updatedAt: new Date(),
+    },
+    {
+      new: true,
+    },
+  );
+  return updateDoc;
+};
 
 export const UserService = {
   createUserToDB,
@@ -202,4 +220,5 @@ export const UserService = {
   userMatchingUsersFromDB,
   getSingleUserFromDB,
   insertBulkUsersToDB,
+  adminVerifiedUserToDB,
 };
