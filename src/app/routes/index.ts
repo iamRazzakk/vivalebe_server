@@ -19,6 +19,7 @@ import { ChatRoutes } from "../modules/chat/chat.routes";
 import { MessageRoutes } from "../modules/message/message.routes";
 import { FeedbackRoutes } from "../modules/feedback/feedback.route";
 import { FeedRoutes } from "../modules/feed/feed.route";
+import { PostReportRoutes } from "../modules/post_report/post_report.route";
 const router = Router();
 
 const apiRoutes = [
@@ -42,6 +43,7 @@ const apiRoutes = [
   { path: "/message", route: MessageRoutes },
   { path: "/feedback", route: FeedbackRoutes },
   { path: "/feed", route: FeedRoutes },
+  { path: "/post-report", route: PostReportRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));
