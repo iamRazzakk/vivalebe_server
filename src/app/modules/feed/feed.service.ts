@@ -1,0 +1,228 @@
+import { JwtPayload } from "jsonwebtoken";
+import { Types } from "mongoose";
+import { getLikeCountDeltas } from "../../../redis/redis.store";
+import { Feed } from "./feed.model";
+import { Posts } from "../posts/posts.model";
+import {
+  DEFAULT_FEED_LIMIT,
+  ENGAGED_RATIO,
+  MAX_FEED_LIMIT,
+} from "./feed.constants";
+import { getDiscoverAuthorIds } from "../../../helpers/feedFanoutHelper";
+import ApiError from "../../../errors/ApiErrors";
+import { StatusCodes } from "http-status-codes";
+import { User } from "../user/user.model";
+
+type FeedItem = {
+  _id?: unknown;
+  source: "engaged" | "discover";
+  post: Record<string, unknown>;
+  author: Record<string, unknown> | Types.ObjectId;
+  createdAt?: Date;
+};
+
+const withLiveLikeCounts = async (items: FeedItem[]) => {
+  const postIds = items
+    .map((i) => (i.post?._id ? String(i.post._id) : null))
+    .filter(Boolean) as string[];
+  if (!postIds.length) return items;
+
+  const deltas = await getLikeCountDeltas(postIds);
+  return items.map((item) => ({
+    ...item,
+    post: {
+      ...item.post,
+      likeCount:
+        ((item.post.likeCount as number) || 0) +
+        (deltas[String(item.post._id)] || 0),
+    },
+  }));
+};
+
+const getEngagedPosts = async (userId: string, limit: number, skip: number) => {
+  if (limit <= 0) return { items: [] as FeedItem[], hasMore: false };
+
+  // +1 to detect next page
+  const rows = await Feed.find({ owner: new Types.ObjectId(userId) })
+    .sort({ createdAt: -1, _id: -1 })
+    .skip(skip)
+    .limit(limit + 1)
+    .populate({
+      path: "post",
+      select: "description content type likeCount commentCount createdAt user",
+    })
+    .populate({
+      path: "author",
+      select: "name profile displayName nationality",
+    })
+    .lean();
+
+  const hasMore = rows.length > limit;
+  const sliced = hasMore ? rows.slice(0, limit) : rows;
+
+  const items = sliced
+    .filter((r) => r.post)
+    .map((r) => ({
+      _id: r._id,
+      source: "engaged" as const,
+      post: r.post as unknown as Record<string, unknown>,
+      author: r.author as unknown as Record<string, unknown>,
+      createdAt: r.createdAt,
+    }));
+
+  return { items, hasMore };
+};
+
+const getDiscoverPosts = async (
+  userId: string,
+  limit: number,
+  skip: number,
+  excludePostIds: Set<string>,
+) => {
+  if (limit <= 0) return { items: [] as FeedItem[], hasMore: false };
+
+  const authorIds = await getDiscoverAuthorIds(userId);
+  if (!authorIds.length) return { items: [], hasMore: false };
+
+  // fetch extra for exclude/dedupe, then page
+  const fetchLimit = skip + limit + 1 + excludePostIds.size;
+  const posts = await Posts.find({ user: { $in: authorIds } })
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(fetchLimit)
+    .select("description content type likeCount commentCount createdAt user")
+    .lean();
+
+  const filtered = posts.filter((p) => !excludePostIds.has(String(p._id)));
+  const pageSlice = filtered.slice(skip, skip + limit + 1);
+  const hasMore = pageSlice.length > limit;
+  const sliced = hasMore ? pageSlice.slice(0, limit) : pageSlice;
+
+  if (!sliced.length) return { items: [], hasMore: false };
+
+  const authorMap = new Map(
+    (
+      await User.find({ _id: { $in: sliced.map((p) => p.user) } })
+        .select("name profile displayName nationality")
+        .lean()
+    ).map((u) => [String(u._id), u]),
+  );
+
+  const items = sliced.map((p: any) => ({
+    source: "discover" as const,
+    post: p as unknown as Record<string, unknown>,
+    author: (authorMap.get(String(p.user)) || p.user) as unknown as Record<
+      string,
+      unknown
+    >,
+    createdAt: p.createdAt as Date | undefined,
+  }));
+
+  return { items, hasMore };
+};
+
+/** Soft 70/30 merge; engaged short hole discover fill */
+const mergeHybridFeed = (
+  engaged: FeedItem[],
+  discover: FeedItem[],
+  limit: number,
+) => {
+  const result: FeedItem[] = [];
+  const seen = new Set<string>();
+
+  let e = 0;
+  let d = 0;
+
+  while (result.length < limit && (e < engaged.length || d < discover.length)) {
+    for (
+      let i = 0;
+      i < 2 && result.length < limit && d < discover.length;
+      i++
+    ) {
+      const item = discover[d++];
+      const id = String(item.post._id);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      result.push(item);
+    }
+    if (result.length < limit && e < engaged.length) {
+      const item = engaged[e++];
+      const id = String(item.post._id);
+      if (!seen.has(id)) {
+        seen.add(id);
+        result.push(item);
+      }
+    }
+  }
+
+  while (result.length < limit && d < discover.length) {
+    const item = discover[d++];
+    const id = String(item.post._id);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    result.push(item);
+  }
+  while (result.length < limit && e < engaged.length) {
+    const item = engaged[e++];
+    const id = String(item.post._id);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    result.push(item);
+  }
+
+  return result;
+};
+
+const getMyFeedFromDB = async (
+  user: JwtPayload,
+  query: Record<string, unknown>,
+) => {
+  const me = await User.findById(user.id).select("_id").lean();
+  if (!me) throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
+
+  const rawLimit = Number(query.limit) || DEFAULT_FEED_LIMIT;
+  const limit = Math.min(Math.max(1, rawLimit), MAX_FEED_LIMIT);
+  const page = Math.max(1, Number(query.page) || 1);
+
+  const engagedLimit = Math.ceil(limit * ENGAGED_RATIO);
+  const discoverLimit = Math.max(limit - engagedLimit, 0);
+
+  const engagedSkip = (page - 1) * engagedLimit;
+  const discoverSkip = (page - 1) * discoverLimit;
+
+  // engaged first (for exclude set)
+  const engagedResult = await getEngagedPosts(
+    user.id,
+    engagedLimit,
+    engagedSkip,
+  );
+
+  const excludePostIds = new Set(
+    engagedResult.items.map((i) => String(i.post._id)),
+  );
+
+  // fetch a bit extra discover for merge fill
+  const discoverResult = await getDiscoverPosts(
+    user.id,
+    Math.max(discoverLimit, limit), // allow fill if engaged short
+    discoverSkip,
+    excludePostIds,
+  );
+
+  let feed = mergeHybridFeed(engagedResult.items, discoverResult.items, limit);
+  feed = await withLiveLikeCounts(feed);
+
+  return {
+    feed,
+    meta: {
+      page,
+      limit,
+      engagedCount: feed.filter((f) => f.source === "engaged").length,
+      discoverCount: feed.filter((f) => f.source === "discover").length,
+      hasNextPage: engagedResult.hasMore || discoverResult.hasMore,
+    },
+  };
+};
+
+export const FeedServices = {
+  getMyFeedFromDB,
+};

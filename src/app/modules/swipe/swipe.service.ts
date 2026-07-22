@@ -7,15 +7,25 @@ import { StatusCodes } from "http-status-codes";
 import { User } from "../user/user.model";
 import QueryBuilder from "../../builder/queryBuilder";
 import { IUser } from "../user/user.interface";
+import { backfillAuthorPostsToUser } from "../../../helpers/feedFanoutHelper";
+import { Feed } from "../feed/feed.model";
 
 const createSwipeUserIntoDB = async (payload: ISwipe, user: JwtPayload) => {
+  const fromUser = new Types.ObjectId(user.id);
+  const toUser = new Types.ObjectId(String(payload.toUser));
   const swipe = await Swipe.create({
-    fromUser: new Types.ObjectId(user.id),
-    toUser: new Types.ObjectId(String(payload.toUser)),
+    fromUser,
+    toUser,
     action: payload.action,
   });
   if (!swipe) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "FAILED_TO_CREATE_SWIPES");
+  }
+  if (payload.action === "like") {
+    await backfillAuthorPostsToUser(user.id, payload.toUser);
+  }
+  if (payload.action === "reject") {
+    await Feed.deleteMany({ owner: fromUser, author: toUser });
   }
   return swipe;
 };
@@ -79,7 +89,7 @@ const getFeedUsersFromDB = async (
     throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
   }
   const userObjectId = new Types.ObjectId(user.id);
-  // distinct use koro - find er cheye reliable
+  // distinct use
   const swipedUserIds = await Swipe.distinct("toUser", {
     fromUser: userObjectId,
   });
