@@ -7,7 +7,7 @@ import validateRequest from "../../middlewares/validateRequest";
 import {
   getSingleFilePath,
   getUploadFields,
-} from "../../middlewares/fileUploaderHandlar";
+} from "../../middlewares/fileUploaderHandlarWithR2";
 import { createBlurredImage } from "../../../shared/protectedFile";
 
 const router = express.Router();
@@ -33,7 +33,11 @@ router
         const imageFiles =
           (req.files as Record<string, Express.Multer.File[]>)?.image ?? [];
         if (imageFiles[0]) {
-          data.profile = `/image/${imageFiles[0].filename}`;
+          const profileUrl = await getSingleFilePath(
+            req.files as Record<string, Express.Multer.File[]>,
+            "image",
+          );
+          if (profileUrl) data.profile = profileUrl;
           const blurPath = await createBlurredImage(imageFiles[0]);
           if (blurPath) data.protectedImages = blurPath;
         }
@@ -53,13 +57,15 @@ router
         const data = req.body;
         const imageFiles =
           (req.files as Record<string, Express.Multer.File[]>)?.image ?? [];
-
         if (imageFiles[0]) {
-          data.profile = `/image/${imageFiles[0].filename}`;
+          const profileUrl = await getSingleFilePath(
+            req.files as Record<string, Express.Multer.File[]>,
+            "image",
+          );
+          if (profileUrl) data.profile = profileUrl;
           const blurPath = await createBlurredImage(imageFiles[0]);
           if (blurPath) data.protectedImages = blurPath;
         }
-
         req.body = data;
         next();
       } catch (error) {

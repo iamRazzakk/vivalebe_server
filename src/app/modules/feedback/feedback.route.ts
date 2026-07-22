@@ -5,9 +5,10 @@ import { FeedbackValidations } from "./feedback.validation";
 import auth from "../../middlewares/auth";
 import { USER_ROLES } from "../../../enums/user";
 import { fileUploadHandler } from "../../../shared/fileUploadHandler";
-import { getMultipleFilesPath } from "../../middlewares/fileUploaderHandlar";
+import { getMultipleFilesPath } from "../../middlewares/fileUploaderHandlarWithR2";
 
 const router = express.Router();
+
 router
   .route("/")
   .post(
@@ -15,7 +16,7 @@ router
     async (req: Request, _res: Response, next: NextFunction) => {
       try {
         const data = req.body;
-        const media = getMultipleFilesPath(
+        const media = await getMultipleFilesPath(
           req.files as unknown as Record<string, Express.Multer.File[]>,
           "media",
         );
@@ -34,4 +35,5 @@ router
 router
   .route("/:id")
   .patch(auth(USER_ROLES.SUPER_ADMIN), FeedbackController.updateFeedback);
+
 export const FeedbackRoutes = router;

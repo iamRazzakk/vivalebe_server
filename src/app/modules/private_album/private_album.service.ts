@@ -3,6 +3,7 @@ import { IPrivateAlbum } from "./private_album.interface";
 import { PrivateAlbum } from "./private_album.model";
 import { Types } from "mongoose";
 import ApiError from "../../../errors/ApiErrors";
+import { StatusCodes } from "http-status-codes";
 
 const createPrivateAlbum = async (
   privateAlbum: IPrivateAlbum,
@@ -18,7 +19,7 @@ const getPrivateAlbumForMeFromDB = async (user: JwtPayload) => {
     user: new Types.ObjectId(user.id),
   });
   if (!privateAlbum) {
-    throw new ApiError(404, "Private album not found");
+    throw new ApiError(StatusCodes.NOT_FOUND, "Private album not found");
   }
   return privateAlbum;
 };

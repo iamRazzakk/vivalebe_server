@@ -1,44 +1,68 @@
 import sharp from "sharp";
-import path from "path";
-import fs from "fs";
-const PROTECTED_DIR = path.join(process.cwd(), "uploads", "protected");
+import { StatusCodes } from "http-status-codes";
+import ApiError from "../errors/ApiErrors";
+import { uploadBufferToR2 } from "../config/cloudefare.config";
+
 export const createBlurredImage = async (
   file: Express.Multer.File,
 ): Promise<string> => {
-  if (!file.mimetype.startsWith("image/")) {
-    return ""; // video/audio — skip
+  if (!file.mimetype.startsWith("image/")) return "";
+  if (!file.buffer?.length) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "Missing image buffer for blur",
+    );
   }
-  if (!fs.existsSync(PROTECTED_DIR)) {
-    fs.mkdirSync(PROTECTED_DIR, { recursive: true });
-  }
-  const blurredFileName = `blur-${file.filename}`;
-  const outputPath = path.join(PROTECTED_DIR, blurredFileName);
-  // multer disk storage — file.path
-  await sharp(file.path).blur(20).toFile(outputPath);
-  return `/protected/${blurredFileName}`;
+
+  const blurred = await sharp(file.buffer)
+    .rotate()
+    .resize({ width: 800, withoutEnlargement: true })
+    .blur(20)
+    .jpeg({ quality: 70 })
+    .toBuffer();
+
+  const uploaded = await uploadBufferToR2({
+    buffer: blurred,
+    originalname: `blur-${file.originalname.replace(/\.[^.]+$/, "")}.jpg`,
+    mimetype: "image/jpeg",
+    folder: "protected",
+  });
+
+  return uploaded.url;
 };
 
+/**
+ * For existing profile URL already on R2/CDN.
+ * If old local path, skip safely.
+ */
 export const createBlurredImageFromPath = async (
   imagePath: string,
 ): Promise<string> => {
   if (!imagePath || imagePath === "/image.png") return "";
-  const relative = imagePath.replace(/^\//, "").replace(/^uploads\//, "");
-  const inputPath = path.join(process.cwd(), "uploads", relative);
-  if (!fs.existsSync(inputPath)) {
-    console.warn(
-      "Blur skipped — file not found:",
-      inputPath,
-      "from",
-      imagePath,
-    );
+  if (!imagePath.startsWith("http")) {
+    // old local path — cannot blur without disk file
     return "";
   }
-  if (!fs.existsSync(PROTECTED_DIR)) {
-    fs.mkdirSync(PROTECTED_DIR, { recursive: true });
-  }
-  const filename = path.basename(inputPath);
-  const blurredFileName = `blur-${filename}`;
-  const outputPath = path.join(PROTECTED_DIR, blurredFileName);
-  await sharp(inputPath).blur(20).toFile(outputPath);
-  return `/protected/${blurredFileName}`;
+
+  const res = await fetch(imagePath);
+  if (!res.ok) return "";
+
+  const arrayBuffer = await res.arrayBuffer();
+  const input = Buffer.from(arrayBuffer);
+
+  const blurred = await sharp(input)
+    .rotate()
+    .resize({ width: 800, withoutEnlargement: true })
+    .blur(20)
+    .jpeg({ quality: 70 })
+    .toBuffer();
+
+  const uploaded = await uploadBufferToR2({
+    buffer: blurred,
+    originalname: "blur-profile.jpg",
+    mimetype: "image/jpeg",
+    folder: "protected",
+  });
+
+  return uploaded.url;
 };

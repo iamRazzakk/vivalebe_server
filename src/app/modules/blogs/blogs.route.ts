@@ -5,7 +5,7 @@ import { USER_ROLES } from "../../../enums/user";
 import {
   getSingleFilePath,
   getUploadFields,
-} from "../../middlewares/fileUploaderHandlar";
+} from "../../middlewares/fileUploaderHandlarWithR2";
 import requirePremiumMembership from "../../../helpers/requirePremiumMembership";
 
 const router = express.Router();
@@ -19,7 +19,7 @@ router
     async (req: Request, _res: Response, next: NextFunction) => {
       try {
         const data = req.body;
-        const imageUrl = getSingleFilePath(
+        const imageUrl = await getSingleFilePath(
           req.files as Record<string, Express.Multer.File[]>,
           "imageUrl",
         );
@@ -32,19 +32,11 @@ router
         next(error);
       }
     },
-
     BlogsController.createBlog,
   )
   .get(
     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
     BlogsController.getAllBlogs,
   );
-
-// router
-//   .route("/:id")
-//   .get(
-//     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
-//     BlogsController.getSingleBlog,
-//   );
 
 export const BlogsRoutes = router;

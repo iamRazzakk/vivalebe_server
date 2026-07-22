@@ -3,7 +3,10 @@ import { PrivateAlbumController } from "./private_album.controller";
 import requirePremiumMembership from "../../../helpers/requirePremiumMembership";
 import auth from "../../middlewares/auth";
 import { USER_ROLES } from "../../../enums/user";
-import { getUploadFields } from "../../middlewares/fileUploaderHandlar";
+import {
+  getMultipleFilesPath,
+  getUploadFields,
+} from "../../middlewares/fileUploaderHandlarWithR2";
 import { createBlurredImage } from "../../../shared/protectedFile";
 
 const router = express.Router();
@@ -19,10 +22,18 @@ router
         const data = req.body;
         const imageFiles =
           (req.files as Record<string, Express.Multer.File[]>)?.image ?? [];
-        const mediaFiles =
-          (req.files as Record<string, Express.Multer.File[]>)?.media ?? [];
-        const images = imageFiles.map((f) => `/image/${f.filename}`);
-        const media = mediaFiles.map((f) => `/media/${f.filename}`);
+
+        const images =
+          (await getMultipleFilesPath(
+            req.files as Record<string, Express.Multer.File[]>,
+            "image",
+          )) ?? [];
+        const media =
+          (await getMultipleFilesPath(
+            req.files as Record<string, Express.Multer.File[]>,
+            "media",
+          )) ?? [];
+
         const protectedImages: string[] = [];
         for (const file of imageFiles) {
           if (file.mimetype.startsWith("image/")) {
@@ -30,6 +41,7 @@ router
             if (blurPath) protectedImages.push(blurPath);
           }
         }
+
         req.body = {
           ...data,
           images,

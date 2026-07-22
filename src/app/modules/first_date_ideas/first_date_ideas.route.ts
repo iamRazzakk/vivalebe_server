@@ -6,7 +6,7 @@ import {
   getMultipleFilesPath,
   getSingleFilePath,
   getUploadFields,
-} from "../../middlewares/fileUploaderHandlar";
+} from "../../middlewares/fileUploaderHandlarWithR2";
 import { FirstDateIdeasValidations } from "./first_date_ideas.validation";
 import validateRequest from "../../middlewares/validateRequest";
 
@@ -18,10 +18,9 @@ router
     auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
     getUploadFields(),
     async (req, res, next) => {
-      req.on("data", () => {});
       try {
         const data = req.body;
-        const media = getMultipleFilesPath(
+        const media = await getMultipleFilesPath(
           req.files as Record<string, Express.Multer.File[]>,
           "media",
         );
@@ -45,6 +44,7 @@ router
     auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
     FirstDateIdeaController.getAllFirstDateIdeas,
   );
+
 router
   .route("/:id")
   .get(
@@ -57,7 +57,7 @@ router
     async (req, _res, next) => {
       try {
         const data = req.body;
-        const media = getSingleFilePath(
+        const media = await getSingleFilePath(
           req.files as Record<string, Express.Multer.File[]>,
           "media",
         );

@@ -24,9 +24,9 @@ const createUserZodSchema = z.object({
         .string({ required_error: "Confirm password is required" })
         .optional(),
       profile: z.string({ required_error: "Profile is required" }).optional(),
-      protectedImages: z
-        .string({ required_error: "Protected images is required" })
-        .optional(),
+      // protectedImages: z
+      //   .string({ required_error: "Protected images is required" })
+      //   .optional(),
     })
     .strict()
     .refine(
@@ -129,6 +129,7 @@ const updateProfileZodSchema = z.object({
       verified: z.boolean().optional(),
       isBanned: z.boolean().optional(),
       tokenVersion: z.number().optional(),
+      protectedImages: z.string().optional(),
     })
     .strict()
     .refine((data) => !data.email, {

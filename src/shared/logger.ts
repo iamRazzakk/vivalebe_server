@@ -22,7 +22,7 @@ const myFormat = printf(({level, message, label, timestamp }: IMessageProps) => 
 
 const logger = createLogger({
     level: process.env.NODE_ENV === 'production' ? 'info' : (process.env.LOG_LEVEL || 'debug'),
-    format: combine(label({ label: 'PROJECT_NAME' }), timestamp(), myFormat),
+    format: combine(label({ label: 'vivaleve' }), timestamp(), myFormat),
     transports: [
         new transports.Console(),
         new DailyRotateFile({
@@ -36,7 +36,7 @@ const logger = createLogger({
 
 const errorLogger = createLogger({
     level: 'error',
-    format: combine(label({ label: 'PROJECT_NAME' }), timestamp(), myFormat),
+    format: combine(label({ label: 'vivaleve' }), timestamp(), myFormat),
     transports: [
         new transports.Console(),
         new DailyRotateFile({

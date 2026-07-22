@@ -64,4 +64,12 @@ export default {
     emailFailedQueue: process.env.EMAIL_FAILED_QUEUE!,
   },
   // stripe
+  cloudflare: {
+    CLOUDFLARE_SECRET_KEY: process.env.CLOUDFARE_SECRET_KEY!,
+    CLOUDFLARE_BUCKET_NAME: process.env.CLOUDFARE_BUCKET_NAME!,
+    CLOUDFLARE_API_KEY: process.env.CLOUDFLARE_API_KEY!,
+    CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID!,
+    CLOUDFLARE_API_URL: process.env.CLOUDFLARE_API_URL!,
+    CLOUDFLARE_PUBLIC_URL: process.env.CLOUDFLARE_PUBLIC_URL!,
+  },
 };

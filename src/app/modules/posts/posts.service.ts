@@ -1,12 +1,12 @@
-import { JwtPayload } from 'jsonwebtoken';
-import { IPosts } from './posts.interface';
-import { Posts } from './posts.model';
-import sendPostToQueue from '../../queue/post.queue';
-import QueryBuilder from '../../builder/queryBuilder';
+import { JwtPayload } from "jsonwebtoken";
+import { IPosts } from "./posts.interface";
+import { Posts } from "./posts.model";
+import sendPostToQueue from "../../queue/post.queue";
+import QueryBuilder from "../../builder/queryBuilder";
 import {
   getLikeCountDelta,
   getLikeCountDeltas,
-} from '../../../redis/redis.store';
+} from "../../../redis/redis.store";
 
 const createPostIndoDB = async (post: IPosts, user: JwtPayload) => {
   post.user = user.id;
@@ -16,10 +16,12 @@ const createPostIndoDB = async (post: IPosts, user: JwtPayload) => {
 const createPostToDB = async (payload: IPosts, user: JwtPayload) => {
   payload.user = user.id;
   await sendPostToQueue(payload);
-  return { data: payload, message: 'Post created successfully' };
+  return { data: payload, message: "Post created successfully" };
 };
 
-const withLiveLikeCounts = async <T extends { _id: unknown; likeCount?: number }>(
+const withLiveLikeCounts = async <
+  T extends { _id: unknown; likeCount?: number },
+>(
   posts: T[],
 ) => {
   if (!posts.length) return posts;
