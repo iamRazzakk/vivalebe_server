@@ -32,7 +32,21 @@ const getChat = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getSingleChat = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id;
+
+  const chat = await ChatService.getSingleChatFromDB(id, req.user!.id);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Chat Retrieve Successfully",
+    data: chat,
+  });
+});
+
 export const ChatController = {
   createChat,
   getChat,
+  getSingleChat,
 };

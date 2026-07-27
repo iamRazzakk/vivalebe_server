@@ -16,7 +16,11 @@ import generateOTP from "../../../util/generateOTP";
 import { ResetToken } from "../resetToken/resetToken.model";
 import { User } from "../user/user.model";
 import { jwtHelpers } from "../../../helpers/jwtHelper";
-import { dataDeleteFromRedis, dataGetFromRedis, dataStoreToRedis } from "../../../redis/redis.store";
+import {
+  dataDeleteFromRedis,
+  dataGetFromRedis,
+  dataStoreToRedis,
+} from "../../../redis/redis.store";
 
 //login
 const loginUserFromDB = async (payload: ILoginData) => {
@@ -74,14 +78,18 @@ const forgetPasswordToDB = async (email: string) => {
   emailHelper.sendEmail(forgetPassword);
 
   //save to DB
-  await dataStoreToRedis(`authentication:${isExistUser.email.toString()}`, JSON.stringify({
-    email: isExistUser?.email,
-    oneTimeCode: otp,
-    expireAt: new Date(Date.now() + 3 * 60000),
-  }), 3 * 60 * 1000);
+  await dataStoreToRedis(
+    `authentication:${isExistUser.email.toString()}`,
+    JSON.stringify({
+      email: isExistUser?.email,
+      oneTimeCode: otp,
+      expireAt: new Date(Date.now() + 3 * 60000),
+    }),
+    3 * 60 * 1000,
+  );
   return {
     message: "Please check your email, we send a OTP!",
-  }
+  };
 };
 
 //verify email
@@ -91,7 +99,9 @@ const verifyEmailToDB = async (payload: IVerifyEmail) => {
   if (!isExistUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
-  const authentication = await dataGetFromRedis(`authentication:${isExistUser?.email?.toString()}`);
+  const authentication = await dataGetFromRedis(
+    `authentication:${isExistUser?.email?.toString()}`,
+  );
   if (!authentication) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid otp!");
   }
@@ -299,11 +309,15 @@ const resendVerificationEmailToDB = async (email: string) => {
   const accountEmailTemplate = emailTemplate.createAccount(emailValues);
   emailHelper.sendEmail(accountEmailTemplate);
 
-  await dataStoreToRedis(`authentication:${existingUser.email.toString()}`, JSON.stringify({
-    email: existingUser?.email,
-    oneTimeCode: otp,
-    expireAt: new Date(Date.now() + 3 * 60000),
-  }), 3 * 60 * 1000);
+  await dataStoreToRedis(
+    `authentication:${existingUser.email.toString()}`,
+    JSON.stringify({
+      email: existingUser?.email,
+      oneTimeCode: otp,
+      expireAt: new Date(Date.now() + 3 * 60000),
+    }),
+    3 * 60 * 1000,
+  );
 };
 
 // delete user

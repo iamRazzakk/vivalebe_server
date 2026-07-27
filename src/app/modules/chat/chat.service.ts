@@ -5,6 +5,7 @@ import { IMessage } from "../message/message.interface";
 import { Message } from "../message/message.model";
 import { IChat } from "./chat.interface";
 import { Chat } from "./chat.model";
+import { Types } from "mongoose";
 
 const createChatToDB = async (
   payload: any,
@@ -30,7 +31,7 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
   const chats: any = await Chat.find({ participants: { $in: [user.id] } })
     .populate({
       path: "participants",
-      select: "_id firstName lastName image",
+      select: "_id name displayName profile",
       match: {
         _id: { $ne: user.id }, // Exclude user.id in the populated participants
         ...(search && { name: { $regex: search, $options: "i" } }), // Apply $regex only if search is valid
@@ -64,4 +65,24 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
   return chatList;
 };
 
-export const ChatService = { createChatToDB, getChatFromDB };
+const getSingleChatFromDB = async (
+  id: string,
+  userId: string,
+): Promise<IChat | null> => {
+  const result = await Chat.findById(id)
+    .populate("participants", "_id name displayName profile")
+    .lean();
+  if (!result) return null;
+  const currentUserId = new Types.ObjectId(userId);
+  // @ts-ignore
+  result.participants = (result.participants as any[]).filter(
+    (p) => p && !currentUserId.equals(p._id),
+  );
+  return result as IChat;
+};
+
+export const ChatService = {
+  createChatToDB,
+  getChatFromDB,
+  getSingleChatFromDB,
+};

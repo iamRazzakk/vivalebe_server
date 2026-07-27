@@ -25,5 +25,9 @@ router.get(
   auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
   ChatController.getChat,
 );
-
+router.get(
+  "/:id",
+  auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+  ChatController.getSingleChat,
+);
 export const ChatRoutes = router;

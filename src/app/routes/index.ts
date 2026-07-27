@@ -20,6 +20,9 @@ import { MessageRoutes } from "../modules/message/message.routes";
 import { FeedbackRoutes } from "../modules/feedback/feedback.route";
 import { FeedRoutes } from "../modules/feed/feed.route";
 import { PostReportRoutes } from "../modules/post_report/post_report.route";
+import { BlockRoutes } from "../modules/block/block.route";
+import { PrivateFileAccessRoutes } from "../modules/privateFileAccess/privateFileAccess.routes";
+import { SearchRoutes } from "../modules/search/search.route";
 const router = Router();
 
 const apiRoutes = [
@@ -36,6 +39,7 @@ const apiRoutes = [
   { path: "/first-date-ideas", route: FirstDateIdeasRoutes },
   { path: "/swipe", route: SwipeRoutes },
   { path: "/view-me", route: ViewMeRoutes },
+  { path: "/block", route: BlockRoutes },
   { path: "/package", route: PackageRoutes },
   { path: "/subscription", route: SubscriptionRoutes },
   { path: "/private-albums", route: PrivateAlbumRoutes },
@@ -44,6 +48,8 @@ const apiRoutes = [
   { path: "/feedback", route: FeedbackRoutes },
   { path: "/feed", route: FeedRoutes },
   { path: "/post-report", route: PostReportRoutes },
+  { path: "/private-file-access", route: PrivateFileAccessRoutes },
+  { path: "/search", route: SearchRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));

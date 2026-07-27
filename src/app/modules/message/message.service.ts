@@ -2,6 +2,7 @@ import { JwtPayload } from "jsonwebtoken";
 import { IMessage } from "./message.interface";
 import { Message } from "./message.model";
 import { Types } from "mongoose";
+import QueryBuilder from "../../builder/queryBuilder";
 
 const sendMessageToDB = async (
   user: JwtPayload,
@@ -21,9 +22,23 @@ const sendMessageToDB = async (
   return response;
 };
 
-const getMessageFromDB = async (id: any): Promise<IMessage[]> => {
-  const messages = await Message.find({ chatId: id }).sort({ createdAt: -1 });
-  return messages;
+const getMessageFromDB = async (
+  id: any,
+  query: Record<string, any>,
+): Promise<{ meta: any; result: IMessage[] }> => {
+  const qb = new QueryBuilder<IMessage>(Message.find({ chatId: id }), query)
+    .filter()
+    .paginate()
+    .fields()
+    .sort();
+  const [meta, result] = await Promise.all([
+    qb.getPaginationInfo(),
+    qb.modelQuery,
+  ]);
+  return {
+    meta,
+    result,
+  };
 };
 
 export const MessageService = { sendMessageToDB, getMessageFromDB };

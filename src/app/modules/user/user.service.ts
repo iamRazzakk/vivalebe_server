@@ -11,6 +11,8 @@ import { dataStoreToRedis } from "../../../redis/redis.store";
 import QueryBuilder from "../../builder/queryBuilder";
 import { Viewme } from "../viewme/viewme.model";
 import { createBlurredImageFromPath } from "../../../shared/protectedFile";
+import { SearchServices } from "../search/search.service";
+import { Types } from "mongoose";
 
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   if (
@@ -119,13 +121,32 @@ const userMatchingUsersFromDB = async (
 ) => {
   const query = { ...filters };
 
-  // Age -> DOB Range
+  if (query.name) {
+    query.searchTerm = query.name;
+    delete query.name;
+  }
+
+  const searchTerm =
+    typeof query.searchTerm === "string" ? query.searchTerm.trim() : "";
+
+  if (searchTerm) {
+    const dbUser = await User.findById(user.id)
+      .select("premiumMembership")
+      .lean();
+
+    if (dbUser?.premiumMembership) {
+      await SearchServices.createSearchIntoDB({
+        searchTerm,
+        user: new Types.ObjectId(user.id),
+      });
+    }
+  }
+
   if (query.ageFrom || query.ageTo) {
     const today = new Date();
     const dobFilter: Record<string, Date> = {};
 
     if (query.ageTo) {
-      // Oldest date
       dobFilter.$gte = new Date(
         today.getFullYear() - Number(query.ageTo),
         today.getMonth(),
@@ -134,7 +155,6 @@ const userMatchingUsersFromDB = async (
     }
 
     if (query.ageFrom) {
-      // Youngest date
       dobFilter.$lte = new Date(
         today.getFullYear() - Number(query.ageFrom),
         today.getMonth(),
@@ -143,7 +163,6 @@ const userMatchingUsersFromDB = async (
     }
 
     query.DOB = dobFilter;
-
     delete query.ageFrom;
     delete query.ageTo;
   }
@@ -156,6 +175,7 @@ const userMatchingUsersFromDB = async (
   )
     .filter()
     .sort()
+    .search(["name", "email"])
     .paginate();
 
   const [users, meta] = await Promise.all([
@@ -168,7 +188,6 @@ const userMatchingUsersFromDB = async (
     meta,
   };
 };
-
 // get user base on id
 
 const getSingleUserFromDB = async (userId: JwtPayload, id: string) => {

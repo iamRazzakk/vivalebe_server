@@ -19,10 +19,6 @@ router.get(
 );
 
 router
-  .route("/bulk")
-  .post(auth(USER_ROLES.SUPER_ADMIN), UserController.insertBulkUsers);
-
-router
   .route("/")
   .post(
     getUploadFields(),
@@ -87,16 +83,22 @@ router
 router
   .route("/matches")
   .get(
-    auth(USER_ROLES.ADMIN, USER_ROLES.USER),
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
     UserController.userMatchingUsers,
   );
 
 router
   .route("/:id")
-  .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER), UserController.getSingleUser);
+  .get(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.getSingleUser,
+  );
 
 router
   .route("/admin-verified/:id")
-  .patch(auth(USER_ROLES.SUPER_ADMIN), UserController.adminVerifiedUser);
+  .patch(
+    auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    UserController.adminVerifiedUser,
+  );
 
 export const UserRoutes = router;

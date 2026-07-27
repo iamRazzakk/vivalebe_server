@@ -3,14 +3,17 @@ import { USER_ROLES } from "../../../enums/user";
 import auth from "../../middlewares/auth";
 import { MessageController } from "./message.controller";
 import { fileUploadHandler } from "../../../shared/fileUploadHandler";
-import { getMultipleFilesPath } from "../../middlewares/fileUploaderHandlarWithR2";
+import {
+  getMultipleFilesPath,
+  getUploadFields,
+} from "../../middlewares/fileUploaderHandlarWithR2";
 import requirePremiumMembership from "../../../helpers/requirePremiumMembership";
 
 const router = express.Router();
 
 router.post(
   "/",
-  fileUploadHandler(),
+  getUploadFields(),
   auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
   requirePremiumMembership,
   async (req: Request, _res: Response, next: NextFunction) => {

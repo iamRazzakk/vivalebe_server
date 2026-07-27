@@ -165,6 +165,10 @@ const likesYouUsersFromDB = async (
     .filter()
     .sort()
     .fields()
+    .populate(["fromUser"], {
+      fromUser:
+        "name nationality profile height weight education relationStatus bio",
+    })
     .paginate();
   const [likesYouUsers, meta] = await Promise.all([
     qb.modelQuery.lean(),
