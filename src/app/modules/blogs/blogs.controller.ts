@@ -24,4 +24,15 @@ const getAllBlogs = catchAsync(async (req: Request, res: Response) => {
     data: result.blogs,
   });
 });
-export const BlogsController = { createBlog, getAllBlogs };
+
+const myBlogs = catchAsync(async (req: Request, res: Response) => {
+  const result = await BlogsServices.myBlogsFromDB(req.user!.id, req.query);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "My blogs fetched successfully",
+    pagination: result.meta,
+    data: result.blogs,
+  });
+});
+export const BlogsController = { createBlog, getAllBlogs, myBlogs };

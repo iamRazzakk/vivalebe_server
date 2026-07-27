@@ -38,5 +38,10 @@ router
     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
     BlogsController.getAllBlogs,
   );
+router.get(
+  "/my",
+  auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+  BlogsController.myBlogs,
+);
 
 export const BlogsRoutes = router;

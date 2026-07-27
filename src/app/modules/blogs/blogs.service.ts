@@ -26,7 +26,7 @@ const getAllBlogsWithFilteringFromDB = async (
     .sort()
     .cursorPaginate()
     .populate(["userId"], {
-      "userId": "name email profile nationality country state",
+      userId: "name email profile nationality country state",
     });
   const results = await qb.modelQuery.lean();
   const { data: blogs, meta } = qb.getCursorPaginationMeta(
@@ -36,7 +36,26 @@ const getAllBlogsWithFilteringFromDB = async (
   return { blogs, meta };
 };
 
+const myBlogsFromDB = async (id: string, query: Record<string, unknown>) => {
+  const qb = new QueryBuilder(
+    Blogs.find({ userId: new Types.ObjectId(id) }),
+    query,
+  )
+    .fields()
+    .filter()
+    .sort()
+    .cursorPaginate()
+    .populate(["userId"], {
+      userId: "name email profile nationality country state",
+    });
+  const results = await qb.modelQuery.lean();
+  const { data: blogs, meta } = qb.getCursorPaginationMeta(
+    results as Record<string, unknown>[],
+  );
+  return { blogs, meta };
+};
 export const BlogsServices = {
   createBlogIntoDB,
   getAllBlogsWithFilteringFromDB,
+  myBlogsFromDB,
 };
