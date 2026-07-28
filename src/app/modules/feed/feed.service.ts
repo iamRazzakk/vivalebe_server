@@ -21,6 +21,15 @@ type FeedItem = {
   createdAt?: Date;
 };
 
+type PostType = "IMAGE" | "VIDEO";
+
+const normalizePostType = (value: unknown): PostType | undefined => {
+  if (typeof value !== "string") return undefined;
+  const upper = value.toUpperCase();
+  if (upper === "IMAGE" || upper === "VIDEO") return upper;
+  return undefined;
+};
+
 const withLiveLikeCounts = async (items: FeedItem[]) => {
   const postIds = items
     .map((i) => (i.post?._id ? String(i.post._id) : null))
@@ -39,7 +48,12 @@ const withLiveLikeCounts = async (items: FeedItem[]) => {
   }));
 };
 
-const getEngagedPosts = async (userId: string, limit: number, skip: number) => {
+const getEngagedPosts = async (
+  userId: string,
+  limit: number,
+  skip: number,
+  postType?: PostType,
+) => {
   if (limit <= 0) return { items: [] as FeedItem[], hasMore: false };
 
   // +1 to detect next page
@@ -49,6 +63,7 @@ const getEngagedPosts = async (userId: string, limit: number, skip: number) => {
     .limit(limit + 1)
     .populate({
       path: "post",
+      match: postType ? { type: postType } : {},
       select: "description content type likeCount commentCount createdAt user",
     })
     .populate({
@@ -78,6 +93,7 @@ const getDiscoverPosts = async (
   limit: number,
   skip: number,
   excludePostIds: Set<string>,
+  postType?: PostType,
 ) => {
   if (limit <= 0) return { items: [] as FeedItem[], hasMore: false };
 
@@ -86,7 +102,12 @@ const getDiscoverPosts = async (
 
   // fetch extra for exclude/dedupe, then page
   const fetchLimit = skip + limit + 1 + excludePostIds.size;
-  const posts = await Posts.find({ user: { $in: authorIds } })
+  const postFilter: Record<string, unknown> = { user: { $in: authorIds } };
+  if (postType) {
+    postFilter.type = postType;
+  }
+
+  const posts = await Posts.find(postFilter)
     .sort({ createdAt: -1, _id: -1 })
     .limit(fetchLimit)
     .select("description content type likeCount commentCount createdAt user")
@@ -179,6 +200,8 @@ const getMyFeedFromDB = async (
   const me = await User.findById(user.id).select("_id").lean();
   if (!me) throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
 
+  const postType = normalizePostType(query.type);
+
   const rawLimit = Number(query.limit) || DEFAULT_FEED_LIMIT;
   const limit = Math.min(Math.max(1, rawLimit), MAX_FEED_LIMIT);
   const page = Math.max(1, Number(query.page) || 1);
@@ -194,6 +217,7 @@ const getMyFeedFromDB = async (
     user.id,
     engagedLimit,
     engagedSkip,
+    postType,
   );
 
   const excludePostIds = new Set(
@@ -206,6 +230,7 @@ const getMyFeedFromDB = async (
     Math.max(discoverLimit, limit), // allow fill if engaged short
     discoverSkip,
     excludePostIds,
+    postType,
   );
 
   let feed = mergeHybridFeed(engagedResult.items, discoverResult.items, limit);
@@ -216,6 +241,7 @@ const getMyFeedFromDB = async (
     meta: {
       page,
       limit,
+      type: postType || "ALL",
       engagedCount: feed.filter((f) => f.source === "engaged").length,
       discoverCount: feed.filter((f) => f.source === "discover").length,
       hasNextPage: engagedResult.hasMore || discoverResult.hasMore,
