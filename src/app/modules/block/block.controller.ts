@@ -39,9 +39,31 @@ const getAllHiddenUsers = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+
+const unHideUser = catchAsync(async (req: Request, res: Response) => {
+  const result = await BlockServices.unHideUserFromDB(req.user!, req.params.id);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Hidden user unhidden successfully",
+    data: result,
+  });
+});
+const unBlockUser = catchAsync(async (req: Request, res: Response) => {
+  const result = await BlockServices.unBlockUserFromDB(req.user!, req.params.id);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Blocked user unblocked successfully",
+    data: result,
+  });
+});
 export const BlockController = {
   createBlock,
   createHideUser,
   getAllBlockedUsers,
   getAllHiddenUsers,
+  unHideUser,
+  unBlockUser,
 };

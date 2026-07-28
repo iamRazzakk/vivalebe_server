@@ -14,6 +14,12 @@ router
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
     BlockController.getAllBlockedUsers,
   );
+router
+  .route("/:id")
+  .delete(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+    BlockController.unBlockUser,
+  );
 
 router
   .route("/hide")
@@ -24,6 +30,13 @@ router
   .get(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
     BlockController.getAllHiddenUsers,
+  );
+
+router
+  .route("/hide/:id")
+  .delete(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+    BlockController.unHideUser,
   );
 
 export const BlockRoutes = router;

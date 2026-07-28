@@ -2,8 +2,8 @@ import { Model } from "mongoose";
 import { Types } from "mongoose";
 
 export type IBlock = {
-  blockerId: Types.ObjectId;
-  blockedUserId: Types.ObjectId;
+  blockerId: Types.ObjectId; // user id who is blocking
+  blockedUserId: Types.ObjectId; // user id who is blocked
   isBlocked: boolean;
 };
 

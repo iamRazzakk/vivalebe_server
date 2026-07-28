@@ -9,6 +9,7 @@ import QueryBuilder from "../../builder/queryBuilder";
 import { IUser } from "../user/user.interface";
 import { backfillAuthorPostsToUser } from "../../../helpers/feedFanoutHelper";
 import { Feed } from "../feed/feed.model";
+import { Block, HideUser } from "../block/block.model";
 
 const createSwipeUserIntoDB = async (payload: ISwipe, user: JwtPayload) => {
   const fromUser = new Types.ObjectId(user.id);
@@ -151,14 +152,34 @@ const undoSwipeUserIntoDB = async (
 };
 
 // likes you user
+// TODO: need to check this.
 const likesYouUsersFromDB = async (
   user: JwtPayload,
   query: Record<string, unknown>,
 ) => {
+  const [hiddenUsers, blockedUsers] = await Promise.all([
+    HideUser.find({
+      hiddenUserId: user.id,
+      isHidden: true,
+    }).lean(),
+    Block.find({
+      blockerId: user.id,
+      isBlocked: true,
+    }).lean(),
+  ]);
+
+  const excludedIds = [
+    ...hiddenUsers.map((item) => new Types.ObjectId(String(item.userId))),
+    ...blockedUsers.map(
+      (item) => new Types.ObjectId(String(item.blockedUserId)),
+    ),
+  ];
+
   const qb = new QueryBuilder(
     Swipe.find({
       toUser: new Types.ObjectId(user.id),
       action: "like",
+      fromUser: { $nin: excludedIds },
     }),
     query,
   )
@@ -170,14 +191,13 @@ const likesYouUsersFromDB = async (
         "name nationality profile height weight education relationStatus bio",
     })
     .paginate();
+
   const [likesYouUsers, meta] = await Promise.all([
     qb.modelQuery.lean(),
     qb.getPaginationInfo(),
   ]);
-  return {
-    likesYouUsers,
-    meta,
-  };
+
+  return { likesYouUsers, meta };
 };
 
 const youLikedUsersFromDB = async (
