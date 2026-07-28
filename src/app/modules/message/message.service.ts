@@ -3,6 +3,9 @@ import { IMessage } from "./message.interface";
 import { Message } from "./message.model";
 import { Types } from "mongoose";
 import QueryBuilder from "../../builder/queryBuilder";
+import { Chat } from "../chat/chat.model";
+import ApiError from "../../../errors/ApiErrors";
+import { StatusCodes } from "http-status-codes";
 
 const sendMessageToDB = async (
   user: JwtPayload,
@@ -10,7 +13,11 @@ const sendMessageToDB = async (
 ): Promise<IMessage> => {
   // save to DB
   payload.sender = new Types.ObjectId(user.id);
-
+  // need to check this chat id is blocked or not
+  const chat = await Chat.findById(payload.chatId).select("blockedStatus");
+  if (chat?.blockedStatus === "blocked") {
+    throw new ApiError(StatusCodes.FORBIDDEN, "You are blocked from this chat");
+  }
   const response = await Message.create(payload);
 
   //@ts-ignore

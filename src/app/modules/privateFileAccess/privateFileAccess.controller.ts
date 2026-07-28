@@ -6,10 +6,11 @@ import { PrivateFileAccessServices } from "./privateFileAccess.service";
 
 const createPrivateFileAccess = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await PrivateFileAccessServices.createPrivateFileAccessIntoDB(
-      req.body,
-      req.user!,
-    );
+    const result =
+      await PrivateFileAccessServices.createPrivateFileAccessIntoDB(
+        req.body,
+        req.user!,
+      );
     sendResponse(res, {
       success: true,
       statusCode: StatusCodes.CREATED,
@@ -21,8 +22,9 @@ const createPrivateFileAccess = catchAsync(
 
 const getMyPrivateFileAccess = catchAsync(
   async (req: Request, res: Response) => {
-    const result =
-      await PrivateFileAccessServices.getMyPrivateFileAccessFromDB(req.user!);
+    const result = await PrivateFileAccessServices.getMyPrivateFileAccessFromDB(
+      req.user!,
+    );
     sendResponse(res, {
       success: true,
       statusCode: StatusCodes.OK,
@@ -81,10 +83,26 @@ const deletePrivateFileAccess = catchAsync(
   },
 );
 
+const getMyPrivateFileAccessGranted = catchAsync(
+  async (req: Request, res: Response) => {
+    const result =
+      await PrivateFileAccessServices.getMyPrivateFileAccessGrantedFromDB(
+        req.user!,
+      );
+    sendResponse(res, {
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "Private file access granted list fetched successfully",
+      data: result,
+    });
+  },
+);
+
 export const PrivateFileAccessController = {
   createPrivateFileAccess,
   getMyPrivateFileAccess,
   getSinglePrivateFileAccess,
   updatePrivateFileAccess,
   deletePrivateFileAccess,
+  getMyPrivateFileAccessGranted,
 };

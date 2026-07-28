@@ -81,8 +81,20 @@ const getSingleChatFromDB = async (
   return result as IChat;
 };
 
+const blockUserFromChatIntoDB = async (
+  id: string,
+  userId: string,
+  payload: IChat,
+): Promise<IChat | null> => {
+  payload.blockedBy = new Types.ObjectId(userId);
+  const result = await Chat.findByIdAndUpdate(id, payload, { new: true });
+  if (!result) return null;
+  return result as IChat;
+};
+
 export const ChatService = {
   createChatToDB,
   getChatFromDB,
   getSingleChatFromDB,
+  blockUserFromChatIntoDB,
 };

@@ -20,6 +20,17 @@ const chatSchema = new Schema<IChat, ChatModel>({
     type: String,
     required: false,
   },
+  blockedBy: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: false,
+  },
+  blockedStatus: {
+    type: String,
+    default: "active",
+    enum: ["active", "blocked"],
+    required: false,
+  },
 });
 
 export const Chat = model<IChat, ChatModel>("Chat", chatSchema);

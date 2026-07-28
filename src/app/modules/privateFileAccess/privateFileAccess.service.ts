@@ -39,7 +39,22 @@ const createPrivateFileAccessIntoDB = async (
 };
 
 const getMyPrivateFileAccessFromDB = async (user: JwtPayload) => {
+  console.log("This");
   const result = await PrivateFileAccess.find({
+    isAccessGranted: false,
+    $or: [
+      { requestedUserId: new Types.ObjectId(user.id) },
+      { providedUserId: new Types.ObjectId(user.id) },
+    ],
+  })
+    .populate("requestedUserId", "name email profile displayName")
+    .populate("providedUserId", "name email profile displayName")
+    .lean();
+  return result;
+};
+const getMyPrivateFileAccessGrantedFromDB = async (user: JwtPayload) => {
+  const result = await PrivateFileAccess.find({
+    isAccessGranted: true,
     $or: [
       { requestedUserId: new Types.ObjectId(user.id) },
       { providedUserId: new Types.ObjectId(user.id) },
@@ -151,4 +166,5 @@ export const PrivateFileAccessServices = {
   getSinglePrivateFileAccessFromDB,
   updatePrivateFileAccessIntoDB,
   deletePrivateFileAccessFromDB,
+  getMyPrivateFileAccessGrantedFromDB,
 };

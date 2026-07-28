@@ -8,11 +8,23 @@ import ApiError from "../../../errors/ApiErrors";
 import { StatusCodes } from "http-status-codes";
 
 const createWinkIntoDB = async (payload: IWink, user: JwtPayload) => {
+  const alreadyWinked = await Wink.findOne({
+    senderId: new Types.ObjectId(user.id),
+    receiverId: new Types.ObjectId(payload.receiverId),
+  });
+  if (alreadyWinked) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "You have already winked at this user",
+    );
+  }
   const wink = await Wink.create({
     ...payload,
     senderId: new Types.ObjectId(user.id),
   });
   const sender = await User.findById(new Types.ObjectId(user.id)).lean();
+  // if already winked then return
+
   if (!sender) {
     throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
   }

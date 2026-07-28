@@ -54,7 +54,11 @@ app.use(
 // app.use(passport.session());
 
 //router
-app.use("/api/v1", apiLimiter, router);
+app.use(
+  "/api/v1",
+  //  apiLimiter,
+  router,
+);
 
 app.get("/", (_req: Request, res: Response) => {
   const currentTime = new Date().toLocaleString();

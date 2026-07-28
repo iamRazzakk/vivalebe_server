@@ -30,4 +30,9 @@ router.get(
   auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
   ChatController.getSingleChat,
 );
+router.patch(
+  "/:id/block",
+  auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+  ChatController.blockUserFromChat,
+);
 export const ChatRoutes = router;

@@ -45,8 +45,22 @@ const getSingleChat = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const blockUserFromChat = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id;
+  const userId = req.user!.id;
+  const payload = req.body;
+  const chat = await ChatService.blockUserFromChatIntoDB(id, userId, payload);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "User Blocked from Chat Successfully",
+    data: chat,
+  });
+});
+
 export const ChatController = {
   createChat,
   getChat,
   getSingleChat,
+  blockUserFromChat,
 };

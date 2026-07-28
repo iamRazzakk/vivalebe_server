@@ -20,6 +20,12 @@ router
     auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
     PrivateFileAccessController.getMyPrivateFileAccess,
   );
+router
+  .route("/granted")
+  .get(
+    auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    PrivateFileAccessController.getMyPrivateFileAccessGranted,
+  );
 
 router
   .route("/:id")
