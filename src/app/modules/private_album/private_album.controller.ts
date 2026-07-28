@@ -34,7 +34,23 @@ const getPrivateAlbumForMe = catchAsync(
   },
 );
 
+const updatePrivateAlbum = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await PrivateAlbumServices.updatePrivateAlbumIntoDB(
+      req.user as JwtPayload,
+      req.params.id,
+      req.body,
+    );
+    sendResponse(res, {
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "Private album updated successfully",
+      data: result,
+    });
+  },
+);
 export const PrivateAlbumController = {
   createPrivateAlbum,
   getPrivateAlbumForMe,
+  updatePrivateAlbum,
 };

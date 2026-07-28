@@ -61,4 +61,11 @@ router
     PrivateAlbumController.getPrivateAlbumForMe,
   );
 
+router
+  .route("/:id")
+  .patch(
+    auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    PrivateAlbumController.updatePrivateAlbum,
+  );
+
 export const PrivateAlbumRoutes = router;
