@@ -5,6 +5,7 @@ import ApiError from "../../../errors/ApiErrors";
 import QueryBuilder from "../../builder/queryBuilder";
 import { ISuccess_story } from "./success_story.interface";
 import { SuccessStory } from "./success_story.model";
+import { SuccessStoryLike } from "../success_story_like/success_story_like.model";
 
 const createSuccessStoryIntoDB = async (
   payload: ISuccess_story,
@@ -21,17 +22,29 @@ const createSuccessStoryIntoDB = async (
   return result;
 };
 
-const getAllSuccessStoriesFromDB = async (query: Record<string, any>) => {
+const getAllSuccessStoriesFromDB = async (
+  query: Record<string, any>,
+  user: JwtPayload,
+) => {
   const qb = new QueryBuilder<ISuccess_story>(SuccessStory.find(), query)
     .filter()
     .sort()
     .paginate();
 
-  const [result, meta] = await Promise.all([
-    qb.modelQuery.populate("userId", "name profile displayName").exec(),
+  const [stories, meta] = await Promise.all([
+    qb.modelQuery.populate("userId", "name profile displayName").lean().exec(),
     qb.getPaginationInfo(),
   ]);
-
+  const likedStories = await SuccessStoryLike.find({
+    userId: user.id,
+  }).lean();
+  const likedStoryIds = new Set(
+    likedStories.map((like) => like.successStoryId.toString()),
+  );
+  const result = stories.map((story: any) => ({
+    ...story,
+    isLiked: likedStoryIds.has(story?._id.toString()),
+  }));
   return { result, meta };
 };
 

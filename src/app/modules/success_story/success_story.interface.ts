@@ -5,7 +5,10 @@ export type ISuccess_story = {
   title: string;
   description: string;
   media: string[];
-  userId:Types.ObjectId;
+  userId: Types.ObjectId;
+  totalLikes: number;
+  totalComments: number;
+  isLiked?: boolean;
 };
 
 export type Success_storyModel = Model<ISuccess_story>;

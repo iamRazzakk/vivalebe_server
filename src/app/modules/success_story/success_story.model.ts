@@ -12,6 +12,8 @@ const successStorySchema = new Schema<ISuccess_story, Success_storyModel>(
     description: { type: String, required: true },
     media: { type: [String], required: true },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    totalLikes: { type: Number, default: 0 },
+    totalComments: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

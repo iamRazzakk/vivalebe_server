@@ -25,6 +25,8 @@ import { PrivateFileAccessRoutes } from "../modules/privateFileAccess/privateFil
 import { SearchRoutes } from "../modules/search/search.route";
 import { ruleRoutes } from "../modules/rule/rule.route";
 import { SuccessStoryRoutes } from "../modules/success_story/success_story.route";
+import { SuccessStoryCommentRoutes } from "../modules/success_story_comment/success_story_comment.route";
+import { SuccessStoryLikeRoutes } from "../modules/success_story_like/success_story_like.route";
 const router = Router();
 
 const apiRoutes = [
@@ -54,6 +56,8 @@ const apiRoutes = [
   { path: "/search", route: SearchRoutes },
   { path: "/rule", route: ruleRoutes },
   { path: "/success-story", route: SuccessStoryRoutes },
+  { path: "/success-story-like", route: SuccessStoryLikeRoutes },
+  { path: "/success-story-comment", route: SuccessStoryCommentRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));

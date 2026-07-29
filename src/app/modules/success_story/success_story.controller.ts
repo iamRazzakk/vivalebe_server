@@ -23,6 +23,7 @@ const getAllSuccessStories = catchAsync(
   async (req: Request, res: Response, _next: NextFunction) => {
     const data = await SuccessStoryServices.getAllSuccessStoriesFromDB(
       req.query,
+      req.user!,
     );
     sendResponse(res, {
       success: true,

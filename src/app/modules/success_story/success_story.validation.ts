@@ -15,6 +15,8 @@ const successStoryBodySchema = z.object({
     .array(z.string(), { required_error: "Media is required" })
     .min(1, "Media must contain at least 1 item"),
   userId: objectId.optional(),
+  totalLikes: z.number().optional(),
+  totalComments: z.number().optional(),
 });
 
 const createSuccessStorySchema = z.object({
