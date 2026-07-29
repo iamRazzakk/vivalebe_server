@@ -1,44 +1,20 @@
-import { z } from 'zod'
+import { z } from "zod";
+import { RULE_TYPE } from "../../../enums/rule";
 
-const createPrivacyPolicyZodSchema = z.object({
+const createRuleZodSchema = z.object({
   body: z.object({
-    content: z.string({ required_error: 'Privacy policy is required' }),
+    content: z.string({ message: "Rule content is required" }),
+    type: z.nativeEnum(RULE_TYPE, { message: "Rule type is required" }),
   }),
-})
-const updatePrivacyPolicyZodSchema = z.object({
-  body: z.object({
-    content: z.string().optional(),
-  }),
-})
+});
 
-const createTermsAndConditionZodSchema = z.object({
-  body: z.object({
-    content: z.string({ required_error: 'Terms and conditions is required' }),
+const getRuleQueryZodSchema = z.object({
+  query: z.object({
+    type: z.nativeEnum(RULE_TYPE),
   }),
-})
-const updateTermsAndConditionZodSchema = z.object({
-  body: z.object({
-    content: z.string().optional(),
-  }),
-})
-
-const createAboutZodSchema = z.object({
-  body: z.object({
-    content: z.string({ required_error: 'About is required' }),
-  }),
-})
-
-const updaterAboutZodSchema = z.object({
-  body: z.object({
-    content: z.string().optional(),
-  }),
-})
+});
 
 export const RuleValidation = {
-  createPrivacyPolicyZodSchema,
-  updatePrivacyPolicyZodSchema,
-  createAboutZodSchema,
-  updaterAboutZodSchema,
-  createTermsAndConditionZodSchema,
-  updateTermsAndConditionZodSchema,
-}
+  createRuleZodSchema,
+  getRuleQueryZodSchema,
+};

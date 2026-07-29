@@ -8,43 +8,101 @@ import ApiError from "../../../errors/ApiErrors";
 import { StatusCodes } from "http-status-codes";
 
 const createWinkIntoDB = async (payload: IWink, user: JwtPayload) => {
-  const alreadyWinked = await Wink.findOne({
-    senderId: new Types.ObjectId(user.id),
-    receiverId: new Types.ObjectId(payload.receiverId),
-  });
-  if (alreadyWinked) {
-    throw new ApiError(
-      StatusCodes.BAD_REQUEST,
-      "You have already winked at this user",
-    );
+  const senderId = new Types.ObjectId(user.id);
+  const receiverId = new Types.ObjectId(payload.receiverId);
+
+  if (senderId.equals(receiverId)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "You can't wink yourself");
   }
+
+  // Already winked?
+  const existingWink = await Wink.findOne({
+    senderId,
+    receiverId,
+  });
+
+  if (existingWink) {
+    // If matched, don't allow delete
+    if (existingWink.isMatch) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        "You are already matched with this user",
+      );
+    }
+
+    // Toggle OFF
+    await existingWink.deleteOne();
+
+    return {
+      action: "removed",
+      message: "Wink removed successfully",
+    };
+  }
+
+  // Check opposite wink
+  const oppositeWink = await Wink.findOne({
+    senderId: receiverId,
+    receiverId: senderId,
+  });
+
   const wink = await Wink.create({
-    ...payload,
-    senderId: new Types.ObjectId(user.id),
+    senderId,
+    receiverId,
+    isMatch: !!oppositeWink,
   });
-  const sender = await User.findById(new Types.ObjectId(user.id)).lean();
-  // if already winked then return
 
-  if (!sender) {
-    throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
+  // If opposite exists, make both matched
+  if (oppositeWink) {
+    oppositeWink.isMatch = true;
+    await oppositeWink.save();
   }
-  // sending notification using queue
-  await sendNotificationToQueue({
-    text: `${sender?.name || "Someone"} winked at you`,
-    receiver: new Types.ObjectId(payload.receiverId),
-    referenceId: wink._id.toString(),
-    read: false,
-  });
 
-  return wink;
+  const sender = await User.findById(senderId).lean();
+
+  if (sender) {
+    await sendNotificationToQueue({
+      text: `${sender.name} winked at you`,
+      receiver: receiverId,
+      referenceId: wink._id.toString(),
+      read: false,
+    });
+  }
+
+  return {
+    action: "created",
+    message: oppositeWink
+      ? "Congratulations! It's a match."
+      : "Wink sent successfully.",
+    data: wink,
+  };
 };
 
 // get all winks for me..
 const getAllWinksForMeFromDB = async (user: JwtPayload) => {
-  const winks = await Wink.find({ receiverId: new Types.ObjectId(user.id) })
-    .populate("senderId", "")
+  const myId = user.id;
+
+  const winks = await Wink.find({
+    $or: [
+      {
+        senderId: new Types.ObjectId(user.id),
+      },
+      {
+        receiverId: new Types.ObjectId(user.id),
+      },
+    ],
+  })
+    .populate("senderId")
+    .populate("receiverId")
     .lean();
-  return winks;
+
+  return winks.map((wink: any) => {
+    const isMeSender = wink.senderId._id.toString() === user.id;
+
+    return {
+      ...wink,
+      isWinked: isMeSender || wink.isMatch,
+    };
+  });
 };
 
 const getSingleWinkFromDB = async (id: string) => {

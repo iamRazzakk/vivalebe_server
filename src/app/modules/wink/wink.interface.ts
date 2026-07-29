@@ -4,6 +4,7 @@ export type IWink = {
   senderId: Types.ObjectId;
   receiverId: Types.ObjectId;
   isMatch: boolean;
+  isWinked?: boolean;
 };
 
 export type WinkModel = Model<IWink>;

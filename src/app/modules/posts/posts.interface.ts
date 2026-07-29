@@ -1,4 +1,4 @@
-import { Model, Types } from 'mongoose';
+import { Model, Types } from "mongoose";
 
 export type IPosts = {
   description: string;
@@ -7,6 +7,7 @@ export type IPosts = {
   type: "IMAGE" | "VIDEO";
   likeCount?: number;
   commentCount?: number;
+  isLiked?: boolean;
 };
 
 export type PostsModel = Model<IPosts>;

@@ -23,6 +23,7 @@ import { PostReportRoutes } from "../modules/post_report/post_report.route";
 import { BlockRoutes } from "../modules/block/block.route";
 import { PrivateFileAccessRoutes } from "../modules/privateFileAccess/privateFileAccess.routes";
 import { SearchRoutes } from "../modules/search/search.route";
+import { ruleRoutes } from "../modules/rule/rule.route";
 const router = Router();
 
 const apiRoutes = [
@@ -50,6 +51,7 @@ const apiRoutes = [
   { path: "/post-report", route: PostReportRoutes },
   { path: "/private-file-access", route: PrivateFileAccessRoutes },
   { path: "/search", route: SearchRoutes },
+  { path: "/rule", route: ruleRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));

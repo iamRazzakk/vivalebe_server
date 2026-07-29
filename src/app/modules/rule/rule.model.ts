@@ -1,16 +1,10 @@
-import { model, Schema } from 'mongoose';
-import { IRule, RuleModel } from './rule.interface';
+import { IRule } from "./rule.interface";
+import { RULE_TYPE } from "../../../enums/rule";
+import { model, Schema } from "mongoose";
 
-const ruleSchema = new Schema<IRule, RuleModel>({
-  content: {
-    type: String,
-    required: true,
-  },
-  type: {
-    type: String,
-    enum: ['privacy', 'terms', 'about'],
-    select: 0,
-  },
+const ruleSchema = new Schema({
+  content: { type: String, required: true, unique: true },
+  type: { type: String, required: true, enum: RULE_TYPE },
 });
 
-export const Rule = model<IRule, RuleModel>('Rule', ruleSchema);
+export const RuleModel = model<IRule>("Rule", ruleSchema);

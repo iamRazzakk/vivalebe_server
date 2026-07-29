@@ -1,8 +1,13 @@
 import { JwtPayload } from "jsonwebtoken";
 import { Types } from "mongoose";
-import { getLikeCountDeltas } from "../../../redis/redis.store";
+import {
+  getLikeCountDeltas,
+  isLikedInRedis,
+  isPendingRemove,
+} from "../../../redis/redis.store";
 import { Feed } from "./feed.model";
 import { Posts } from "../posts/posts.model";
+import { Like } from "../like/like.model"; // CHANGE: isLiked check-এর জন্য
 import {
   DEFAULT_FEED_LIMIT,
   ENGAGED_RATIO,
@@ -44,6 +49,54 @@ const withLiveLikeCounts = async (items: FeedItem[]) => {
       likeCount:
         ((item.post.likeCount as number) || 0) +
         (deltas[String(item.post._id)] || 0),
+    },
+  }));
+};
+
+/**
+ * CHANGE (new function):
+ * প্রতিটা feed post-এ current user like দিয়েছে কিনা — isLiked: true/false সেট করে।
+ * Redis buffer + DB দুটোই চেক (createLike-এর same logic)।
+ */
+const withIsLikedStatus = async (items: FeedItem[], userId: string) => {
+  const postIds = items
+    .map((i) => (i.post?._id ? String(i.post._id) : null))
+    .filter(Boolean) as string[];
+
+  if (!postIds.length) return items;
+
+  // Redis: currently liked?
+  const redisFlags = await Promise.all(
+    postIds.map((postId) => isLikedInRedis(userId, postId)),
+  );
+
+  // DB: Like document আছে কিনা
+  const dbLikes = await Like.find({
+    userId: new Types.ObjectId(userId),
+    postId: { $in: postIds.map((id) => new Types.ObjectId(id)) },
+  })
+    .select("postId")
+    .lean();
+
+  const dbLikedSet = new Set(dbLikes.map((l) => String(l.postId)));
+
+  // Pending unlike → DB-তে থাকলেও isLiked = false
+  const pendingRemoveFlags = await Promise.all(
+    postIds.map((postId) => isPendingRemove(userId, postId)),
+  );
+
+  const likedSet = new Set<string>();
+  postIds.forEach((postId, i) => {
+    const inRedis = redisFlags[i];
+    const inDb = dbLikedSet.has(postId) && !pendingRemoveFlags[i];
+    if (inRedis || inDb) likedSet.add(postId);
+  });
+
+  return items.map((item) => ({
+    ...item,
+    post: {
+      ...item.post,
+      isLiked: likedSet.has(String(item.post._id)), // CHANGE: attach isLiked
     },
   }));
 };
@@ -235,6 +288,9 @@ const getMyFeedFromDB = async (
 
   let feed = mergeHybridFeed(engagedResult.items, discoverResult.items, limit);
   feed = await withLiveLikeCounts(feed);
+
+  // CHANGE: likeCount-এর পর current user-এর isLiked attach
+  feed = await withIsLikedStatus(feed, user.id);
 
   return {
     feed,

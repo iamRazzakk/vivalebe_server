@@ -1,25 +1,37 @@
-import express from 'express';
-import { USER_ROLES } from '../../../enums/user';
-import auth from '../../middlewares/auth';
-import { RuleController } from './rule.controller';
-const router = express.Router();
+import { NextFunction, Request, Response, Router } from "express";
+import { RuleController } from "./rule.controller";
 
+import { RuleValidation } from "./rule.validation";
+import auth from "../../middlewares/auth";
+import { USER_ROLES } from "../../../enums/user";
+import validateRequest from "../../middlewares/validateRequest";
+const router = Router();
 
-//about us
+const validateRuleQuery = (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) => {
+  const result = RuleValidation.getRuleQueryZodSchema.safeParse({
+    query: req.query,
+  });
+
+  if (!result.success) {
+    next(result.error);
+    return;
+  }
+
+  next();
+};
+
+//create rule
 router
-    .route('/about')
-    .post(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), RuleController.createAbout)
-    .get(RuleController.getAbout);
+  .route("/")
+  .post(
+    auth(USER_ROLES.SUPER_ADMIN),
+    validateRequest(RuleValidation.createRuleZodSchema),
+    RuleController.createRule,
+  )
+  .get(validateRuleQuery, RuleController.getRule);
 
-
-//privacy policy
-router
-    .route('/privacy-policy')
-    .post(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), RuleController.createPrivacyPolicy)
-    .get(RuleController.getPrivacyPolicy);
-
-//terms and conditions
-router
-    .route('/terms-and-conditions')
-    .post(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), RuleController.createTermsAndCondition)
-    .get(RuleController.getTermsAndCondition);
+export const ruleRoutes = router;

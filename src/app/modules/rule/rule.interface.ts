@@ -1,8 +1,6 @@
-import { Model } from 'mongoose'
+import { RULE_TYPE } from "../../../enums/rule";
 
 export type IRule = {
-  content: string
-  type: 'privacy' | 'terms' | 'about'
-}
-
-export type RuleModel = Model<IRule, Record<string, unknown>>
+  content: string;
+  type: RULE_TYPE;
+};

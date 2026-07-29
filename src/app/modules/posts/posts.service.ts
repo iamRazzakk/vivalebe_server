@@ -8,7 +8,7 @@ import {
   getLikeCountDeltas,
 } from "../../../redis/redis.store";
 
-const createPostIndoDB = async (post: IPosts, user: JwtPayload) => {
+const createPostIntoDB = async (post: IPosts, user: JwtPayload) => {
   post.user = user.id;
   return await Posts.create(post);
 };
@@ -45,6 +45,7 @@ const getAllPostsFromDB = async (query: Record<string, unknown>) => {
   const { data: posts, meta } = queryBuilder.getCursorPaginationMeta(
     results as Record<string, unknown>[],
   );
+  // need to return also this user like or not in this post
 
   const postsWithLiveCount = await withLiveLikeCounts(
     posts as { _id: unknown; likeCount?: number }[],
@@ -88,12 +89,10 @@ const getSinglePostFromDB = async (id: string) => {
   };
 };
 
-// 
-
-
+//
 
 export const PostsServices = {
-  createPostIndoDB,
+  createPostIntoDB,
   createPostToDB,
   getAllPostsFromDB,
   getPostsByUserFromDB,
