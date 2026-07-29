@@ -54,7 +54,8 @@ const getMyLikesFromDB = async (
   )
     .filter()
     .sort()
-    .paginate();
+    .paginate()
+    .populate(["blogId"], {});
   const [data, meta] = await Promise.all([
     qb.modelQuery.lean(),
     qb.getPaginationInfo(),

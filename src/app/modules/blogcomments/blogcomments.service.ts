@@ -67,7 +67,8 @@ const getMyCommentsFromDB = async (
     .fields()
     .filter()
     .sort()
-    .cursorPaginate();
+    .populate(["blogId"], {})
+    .paginate();
   const [comments, meta] = await Promise.all([
     qb.modelQuery.lean(),
     qb.getPaginationInfo(),
