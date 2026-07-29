@@ -235,7 +235,7 @@ const userMatchingUsersFromDB = async (
   };
 };
 // get user base on id
-
+// TODO: filter the wink, frame 
 const getSingleUserFromDB = async (userId: JwtPayload, id: string) => {
   const user = await User.findById(id).lean();
   if (!user) {
