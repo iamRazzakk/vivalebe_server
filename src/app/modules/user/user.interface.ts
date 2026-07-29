@@ -55,6 +55,7 @@ export type IUser = {
   tokenVersion: number;
   isResetPassword: boolean;
   isWinked?: boolean;
+  isLiked?: boolean;
   // authentication?: IAuthenticationProps;
   accountInformation?: IStripeAccountInfo;
 };

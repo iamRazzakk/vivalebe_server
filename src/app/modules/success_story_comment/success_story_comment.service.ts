@@ -25,7 +25,9 @@ const createSuccessStoryCommentInDB = async (
 };
 
 const getSuccessStoryCommentsFromDB = async (id: string) => {
-  return SuccessStoryComment.find({ successStoryId: id }).lean();
+  return SuccessStoryComment.find({ successStoryId: id })
+    .populate("userId", "name profile displayName")
+    .lean();
 };
 
 const deleteSuccessStoryCommentFromDB = async (

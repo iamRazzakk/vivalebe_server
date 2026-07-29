@@ -14,6 +14,7 @@ import { createBlurredImageFromPath } from "../../../shared/protectedFile";
 import { SearchServices } from "../search/search.service";
 import { Types } from "mongoose";
 import { Wink } from "../wink/wink.model";
+import { Swipe } from "../swipe/swipe.model";
 
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   if (
@@ -184,22 +185,37 @@ const userMatchingUsersFromDB = async (
     queryBuilder.getPaginationInfo(),
   ]);
 
+  const loginUserId = new Types.ObjectId(user.id);
   const userIds = users.map((item) => item._id);
 
-  const winkRelations = await Wink.find({
-    $or: [
-      {
-        senderId: new Types.ObjectId(user.id),
-        receiverId: { $in: userIds },
-      },
-      {
-        receiverId: new Types.ObjectId(user.id),
-        senderId: { $in: userIds },
-      },
-    ],
-  })
-    .select("senderId receiverId isMatch")
-    .lean();
+  const [likedSwipes, winkRelations] = await Promise.all([
+    Swipe.find({
+      fromUser: loginUserId,
+      toUser: { $in: userIds },
+      action: "like",
+    })
+      .select("toUser")
+      .lean(),
+
+    Wink.find({
+      $or: [
+        {
+          senderId: loginUserId,
+          receiverId: { $in: userIds },
+        },
+        {
+          receiverId: loginUserId,
+          senderId: { $in: userIds },
+        },
+      ],
+    })
+      .select("senderId receiverId isMatch")
+      .lean(),
+  ]);
+
+  const likedUserIds = new Set(
+    likedSwipes.map((swipe) => swipe.toUser.toString()),
+  );
 
   const winkMap = new Map<
     string,
@@ -210,7 +226,7 @@ const userMatchingUsersFromDB = async (
   >();
 
   for (const wink of winkRelations) {
-    const isMeSender = wink.senderId.toString() === user.id;
+    const isMeSender = wink.senderId.toString() === String(user.id);
 
     const otherUserId = isMeSender
       ? wink.receiverId.toString()
@@ -222,20 +238,26 @@ const userMatchingUsersFromDB = async (
     });
   }
 
-  const usersWithWinkStatus = users.map((item: any) => ({
-    ...item,
-    ...(winkMap.get(item._id.toString()) ?? {
-      isWinked: false,
-      isMatch: false,
-    }),
-  }));
+  const usersWithStatuses = users.map((item: any) => {
+    const targetUserId = item._id.toString();
+
+    return {
+      ...item,
+      isLiked: likedUserIds.has(targetUserId),
+      ...(winkMap.get(targetUserId) ?? {
+        isWinked: false,
+        isMatch: false,
+      }),
+    };
+  });
+
   return {
-    users: usersWithWinkStatus,
+    users: usersWithStatuses,
     meta,
   };
 };
 // get user base on id
-// TODO: filter the wink, frame 
+// TODO: filter the wink, frame
 const getSingleUserFromDB = async (userId: JwtPayload, id: string) => {
   const user = await User.findById(id).lean();
   if (!user) {
