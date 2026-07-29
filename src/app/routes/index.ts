@@ -27,6 +27,8 @@ import { ruleRoutes } from "../modules/rule/rule.route";
 import { SuccessStoryRoutes } from "../modules/success_story/success_story.route";
 import { SuccessStoryCommentRoutes } from "../modules/success_story_comment/success_story_comment.route";
 import { SuccessStoryLikeRoutes } from "../modules/success_story_like/success_story_like.route";
+import { OverviewRoutes } from "../modules/dashboard/overview/overview.routes";
+import { UserListRoutes } from "../modules/dashboard/user/userList.routes";
 const router = Router();
 
 const apiRoutes = [
@@ -58,6 +60,8 @@ const apiRoutes = [
   { path: "/success-story", route: SuccessStoryRoutes },
   { path: "/success-story-like", route: SuccessStoryLikeRoutes },
   { path: "/success-story-comment", route: SuccessStoryCommentRoutes },
+  { path: "/dashboard", route: OverviewRoutes },
+  { path: "/dashboard/user-list", route: UserListRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));
