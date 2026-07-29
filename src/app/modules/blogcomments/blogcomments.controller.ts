@@ -62,9 +62,26 @@ const deleteBlogComment = catchAsync(
     });
   },
 );
+
+const getMyComments = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const data = await BlogCommentsServices.getMyCommentsFromDB(
+      req.user!,
+      req.query,
+    );
+    sendResponse(res, {
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "My comments fetched successfully",
+      pagination: data.meta,
+      data: data.comments,
+    });
+  },
+);
 export const BlogCommentsController = {
   createBlogComment,
   getAllBlogCommentsBasedOnBlogId,
   updateBlogComment,
   deleteBlogComment,
+  getMyComments,
 };

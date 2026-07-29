@@ -13,6 +13,7 @@ import { Viewme } from "../viewme/viewme.model";
 import { createBlurredImageFromPath } from "../../../shared/protectedFile";
 import { SearchServices } from "../search/search.service";
 import { Types } from "mongoose";
+import { Wink } from "../wink/wink.model";
 
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   if (
@@ -183,8 +184,53 @@ const userMatchingUsersFromDB = async (
     queryBuilder.getPaginationInfo(),
   ]);
 
+  const userIds = users.map((item) => item._id);
+
+  const winkRelations = await Wink.find({
+    $or: [
+      {
+        senderId: new Types.ObjectId(user.id),
+        receiverId: { $in: userIds },
+      },
+      {
+        receiverId: new Types.ObjectId(user.id),
+        senderId: { $in: userIds },
+      },
+    ],
+  })
+    .select("senderId receiverId isMatch")
+    .lean();
+
+  const winkMap = new Map<
+    string,
+    {
+      isWinked: boolean;
+      isMatch: boolean;
+    }
+  >();
+
+  for (const wink of winkRelations) {
+    const isMeSender = wink.senderId.toString() === user.id;
+
+    const otherUserId = isMeSender
+      ? wink.receiverId.toString()
+      : wink.senderId.toString();
+
+    winkMap.set(otherUserId, {
+      isWinked: isMeSender || wink.isMatch,
+      isMatch: wink.isMatch,
+    });
+  }
+
+  const usersWithWinkStatus = users.map((item: any) => ({
+    ...item,
+    ...(winkMap.get(item._id.toString()) ?? {
+      isWinked: false,
+      isMatch: false,
+    }),
+  }));
   return {
-    users,
+    users: usersWithWinkStatus,
     meta,
   };
 };

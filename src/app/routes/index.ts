@@ -24,6 +24,7 @@ import { BlockRoutes } from "../modules/block/block.route";
 import { PrivateFileAccessRoutes } from "../modules/privateFileAccess/privateFileAccess.routes";
 import { SearchRoutes } from "../modules/search/search.route";
 import { ruleRoutes } from "../modules/rule/rule.route";
+import { SuccessStoryRoutes } from "../modules/success_story/success_story.route";
 const router = Router();
 
 const apiRoutes = [
@@ -52,6 +53,7 @@ const apiRoutes = [
   { path: "/private-file-access", route: PrivateFileAccessRoutes },
   { path: "/search", route: SearchRoutes },
   { path: "/rule", route: ruleRoutes },
+  { path: "/success-story", route: SuccessStoryRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));

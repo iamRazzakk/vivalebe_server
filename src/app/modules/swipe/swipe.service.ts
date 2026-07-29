@@ -10,25 +10,66 @@ import { IUser } from "../user/user.interface";
 import { backfillAuthorPostsToUser } from "../../../helpers/feedFanoutHelper";
 import { Feed } from "../feed/feed.model";
 import { Block, HideUser } from "../block/block.model";
+import { Wink } from "../wink/wink.model";
 
 const createSwipeUserIntoDB = async (payload: ISwipe, user: JwtPayload) => {
   const fromUser = new Types.ObjectId(user.id);
   const toUser = new Types.ObjectId(String(payload.toUser));
+
+  const existingSwipe = await Swipe.findOne({ fromUser, toUser });
+
+  // Already swiped → toggle OFF (delete), unless mutual like
+  if (existingSwipe) {
+    // Other user also liked me? → connected, cannot remove
+    const oppositeLike = await Swipe.findOne({
+      fromUser: toUser,
+      toUser: fromUser,
+      action: "like",
+    });
+
+    if (oppositeLike) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        "You are already connected with this user",
+      );
+    }
+
+    await existingSwipe.deleteOne();
+
+    if (existingSwipe.action === "like") {
+      await Feed.deleteMany({ owner: fromUser, author: toUser });
+    }
+
+    return {
+      action: "removed",
+      message: "Swipe removed successfully",
+    };
+  }
+
+  // First time → create
   const swipe = await Swipe.create({
     fromUser,
     toUser,
     action: payload.action,
   });
+
   if (!swipe) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "FAILED_TO_CREATE_SWIPES");
   }
+
   if (payload.action === "like") {
     await backfillAuthorPostsToUser(user.id, payload.toUser);
   }
+
   if (payload.action === "reject") {
     await Feed.deleteMany({ owner: fromUser, author: toUser });
   }
-  return swipe;
+
+  return {
+    action: "created",
+    message: "Swipe created successfully",
+    data: swipe,
+  };
 };
 
 // const getFeedUsersFromDB = async (
@@ -219,12 +260,58 @@ const youLikedUsersFromDB = async (
         "name nationality profile height weight education relationStatus bio",
     })
     .paginate();
+
   const [youLikedUsers, meta] = await Promise.all([
     qb.modelQuery.lean(),
     qb.getPaginationInfo(),
   ]);
+
+  const userIds = youLikedUsers.map((item: any) => item.toUser?._id);
+
+  const winkRelations = await Wink.find({
+    $or: [
+      {
+        senderId: new Types.ObjectId(user.id),
+        receiverId: { $in: userIds },
+      },
+      {
+        receiverId: new Types.ObjectId(user.id),
+        senderId: { $in: userIds },
+      },
+    ],
+  })
+    .select("senderId receiverId isMatch")
+    .lean();
+
+  const winkMap = new Map<
+    string,
+    {
+      isWinked: boolean;
+      isMatch: boolean;
+    }
+  >();
+
+  for (const wink of winkRelations) {
+    const isMeSender = wink.senderId.toString() === user.id;
+
+    const otherUserId = isMeSender
+      ? wink.receiverId.toString()
+      : wink.senderId.toString();
+
+    winkMap.set(otherUserId, {
+      isWinked: isMeSender || wink.isMatch,
+      isMatch: wink.isMatch,
+    });
+  }
+
+  const result = youLikedUsers.map((item: any) => ({
+    ...item,
+    isWinked: winkMap.get(item.toUser._id.toString())?.isWinked ?? false,
+    isMatch: winkMap.get(item.toUser._id.toString())?.isMatch ?? false,
+  }));
+
   return {
-    youLikedUsers,
+    youLikedUsers: result,
     meta,
   };
 };

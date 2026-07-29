@@ -83,12 +83,8 @@ const getAllWinksForMeFromDB = async (user: JwtPayload) => {
 
   const winks = await Wink.find({
     $or: [
-      {
-        senderId: new Types.ObjectId(user.id),
-      },
-      {
-        receiverId: new Types.ObjectId(user.id),
-      },
+      { senderId: new Types.ObjectId(myId) },
+      { receiverId: new Types.ObjectId(myId) },
     ],
   })
     .populate("senderId")
@@ -96,11 +92,15 @@ const getAllWinksForMeFromDB = async (user: JwtPayload) => {
     .lean();
 
   return winks.map((wink: any) => {
-    const isMeSender = wink.senderId._id.toString() === user.id;
+    const isMeSender = wink.senderId._id.toString() === myId;
 
     return {
-      ...wink,
+      _id: wink._id,
+      user: isMeSender ? wink.receiverId : wink.senderId,
+      isMatch: wink.isMatch,
       isWinked: isMeSender || wink.isMatch,
+      createdAt: wink.createdAt,
+      updatedAt: wink.updatedAt,
     };
   });
 };

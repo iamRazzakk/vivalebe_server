@@ -10,7 +10,10 @@ const createSwipeUser = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.CREATED,
-    message: "Swipe created successfully",
+    message:
+      swipe.action === "removed"
+        ? "Liked removed successfully"
+        : "Liked created successfully",
     data: swipe,
   });
 });

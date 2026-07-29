@@ -37,7 +37,21 @@ const getBlogLikes = catchAsync(
   },
 );
 
+const getMyLikes = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const data = await BlogLikeServices.getMyLikesFromDB(req.user!, req.query);
+    sendResponse(res, {
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "My likes fetched successfully",
+      pagination: data.meta,
+      data: data.data,
+    });
+  },
+);
+
 export const BlogLikeController = {
   createBlogLike,
   getBlogLikes,
+  getMyLikes,
 };

@@ -16,6 +16,13 @@ router
   );
 
 router
+  .route("/my")
+  .get(
+    auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    BlogCommentsController.getMyComments,
+  );
+
+router
   .route("/:id")
   .get(
     auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),

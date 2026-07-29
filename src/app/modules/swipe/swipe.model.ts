@@ -5,6 +5,7 @@ const swipeSchema = new Schema<ISwipe, SwipeModel>(
   {
     fromUser: { type: Schema.Types.ObjectId, ref: "User", required: true },
     toUser: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    isMatch: { type: Boolean, default: false },
     action: { type: String, enum: ["like", "reject"], required: true },
   },
   {

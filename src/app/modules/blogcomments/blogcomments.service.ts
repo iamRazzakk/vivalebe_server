@@ -5,6 +5,7 @@ import { Types } from "mongoose";
 import { Blogs } from "../blogs/blogs.model";
 import ApiError from "../../../errors/ApiErrors";
 import { StatusCodes } from "http-status-codes";
+import QueryBuilder from "../../builder/queryBuilder";
 
 const createBlogComment = async (
   payload: IBlogPostComments,
@@ -55,9 +56,29 @@ const deleteBlogCommentFromDB = async (id: string, user: JwtPayload) => {
   return data;
 };
 
+const getMyCommentsFromDB = async (
+  user: JwtPayload,
+  query: Record<string, unknown>,
+) => {
+  const qb = new QueryBuilder(
+    BlogPostComments.find({ userId: new Types.ObjectId(user.id) }),
+    query,
+  )
+    .fields()
+    .filter()
+    .sort()
+    .cursorPaginate();
+  const [comments, meta] = await Promise.all([
+    qb.modelQuery.lean(),
+    qb.getPaginationInfo(),
+  ]);
+  return { comments, meta };
+};
+
 export const BlogCommentsServices = {
   createBlogComment,
   getAllBlogCommentsBasedOnBlogId,
   updateBlogCommentIntoDB,
   deleteBlogCommentFromDB,
+  getMyCommentsFromDB,
 };

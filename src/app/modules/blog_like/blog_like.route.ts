@@ -6,6 +6,12 @@ import auth from "../../middlewares/auth";
 const router = express.Router();
 
 router
+  .route("/my")
+  .get(
+    auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    BlogLikeController.getMyLikes,
+  );
+router
   .route("/:id")
   .post(
     auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
@@ -15,4 +21,5 @@ router
     auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
     BlogLikeController.getBlogLikes,
   );
+
 export const BlogLikeRoutes = router;
