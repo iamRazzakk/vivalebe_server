@@ -35,9 +35,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 //file retrieve
-// app.use(express.static("uploads"));
+app.use(express.static("uploads"));
 app.use(express.static("public"));
-app.use(express.static("public"));
+// app.use(express.static("public"));
 
 // Session middleware (must be before passport initialization)
 app.use(
