@@ -263,16 +263,12 @@ const getSingleUserFromDB = async (userId: JwtPayload, id: string) => {
   if (!user) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
-
   await Viewme.findOneAndUpdate(
     { user: id, viewedUser: userId.id },
     {},
     { upsert: true, new: true },
   );
-
   const loginUser = await User.findById(userId.id).lean();
-
-  // already has protected image → do nothing
   if (loginUser && !loginUser.protectedImages && loginUser.profile) {
     const blurPath = await createBlurredImageFromPath(loginUser.profile);
     if (blurPath) {
@@ -283,8 +279,35 @@ const getSingleUserFromDB = async (userId: JwtPayload, id: string) => {
       );
     }
   }
-
-  return user;
+  const loginUserId = new Types.ObjectId(userId.id);
+  const targetUserId = new Types.ObjectId(id);
+  const [likedSwipe, winkRelation] = await Promise.all([
+    Swipe.findOne({
+      fromUser: loginUserId,
+      toUser: targetUserId,
+      action: "like",
+    })
+      .select("_id")
+      .lean(),
+    Wink.findOne({
+      $or: [
+        { senderId: loginUserId, receiverId: targetUserId },
+        { senderId: targetUserId, receiverId: loginUserId },
+      ],
+    })
+      .select("senderId receiverId isMatch")
+      .lean(),
+  ]);
+  let isWinked = false;
+  if (winkRelation) {
+    const isMeSender = winkRelation.senderId.toString() === userId.id;
+    isWinked = isMeSender || winkRelation.isMatch;
+  }
+  return {
+    ...user,
+    isLiked: !!likedSwipe,
+    isWinked,
+  };
 };
 
 const insertBulkUsersToDB = async (payload: Partial<IUser>[]) => {

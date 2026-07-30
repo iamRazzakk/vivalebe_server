@@ -10,7 +10,8 @@ const getUserList = catchAsync(async (req: Request, res: Response) => {
     statusCode: StatusCodes.OK,
     success: true,
     message: "User list fetched successfully",
-    data: userList,
+    pagination: userList.meta,
+    data: userList.data,
   });
 });
 

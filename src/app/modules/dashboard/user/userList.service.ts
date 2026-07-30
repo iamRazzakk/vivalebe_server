@@ -4,20 +4,22 @@ import { User } from "../../user/user.model";
 
 const getUserListFromDB = async (query: Record<string, any>) => {
   const qb = new QueryBuilder(
-    User.find({ $not: { $eq: USER_ROLES.SUPER_ADMIN } }).select("-password"),
+    User.find({
+      role: { $ne: USER_ROLES.SUPER_ADMIN },
+    }).select("-password"),
     query,
   )
     .filter()
     .sort()
     .search(["name", "email", "phone", "role", "status"])
     .paginate();
-  const [userList, total] = await Promise.all([
+  const [data, meta] = await Promise.all([
     qb.modelQuery.lean(),
     qb.getPaginationInfo(),
   ]);
   return {
-    userList,
-    total,
+    data,
+    meta,
   };
 };
 
@@ -27,9 +29,10 @@ const getSingleUserFromDB = async (id: string) => {
 };
 
 const banThisUserFromDB = async (id: string) => {
+  const userDetails = await User.findById(id).lean();
   const user = await User.findByIdAndUpdate(
     id,
-    { isBanned: true },
+    { isBanned: userDetails?.isBanned ? false : true },
     { new: true },
   )
     .select("-password")

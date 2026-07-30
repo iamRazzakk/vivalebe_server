@@ -14,7 +14,7 @@ const router = express.Router();
 
 router.get(
   "/profile",
-  auth(USER_ROLES.ADMIN, USER_ROLES.USER),
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
   UserController.getUserProfile,
 );
 
@@ -46,7 +46,7 @@ router
     UserController.createUser,
   )
   .patch(
-    auth(USER_ROLES.ADMIN, USER_ROLES.USER),
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
     getUploadFields(),
     async (req, _res, next) => {
       try {

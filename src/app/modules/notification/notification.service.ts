@@ -1,58 +1,44 @@
-import { JwtPayload } from 'jsonwebtoken';
-import { INotification } from './notification.interface';
-import { Notification } from './notification.model';
-
-// get notifications
-const getNotificationFromDB = async ( user: JwtPayload ): Promise<INotification> => {
-
-    const result = await Notification.find({ receiver: user.id }).populate({
-        path: 'sender',
-        select: 'name profile',
+import { JwtPayload } from "jsonwebtoken";
+import QueryBuilder from "../../builder/queryBuilder";
+import { Notification } from "./notification.model";
+import ApiError from "../../../errors/ApiErrors";
+import { StatusCodes } from "http-status-codes";
+const getAllNotificationsFromDB = async (
+  user: JwtPayload,
+  query: Record<string, any>,
+) => {
+  const qb = new QueryBuilder(Notification.find({ receiver: user.id }), query)
+    .filter()
+    .fields()
+    .sort()
+    .search(["title", "message"])
+    .populate(["receiver"], {
+      receiver: "name",
     });
-
-    const unreadCount = await Notification.countDocuments({
-        receiver: user.id,
-        read: false,
-    });
-
-    const data: any = {
-        result,
-        unreadCount
-    };
-
-  return data;
+  const [notifications, total] = await Promise.all([
+    qb.modelQuery.lean(),
+    qb.getPaginationInfo(),
+  ]);
+  return {
+    notifications,
+    total,
+  };
 };
 
-// read notifications only for user
-const readNotificationToDB = async ( user: JwtPayload): Promise<INotification | undefined> => {
-
-    const result: any = await Notification.updateMany(
-        { receiver: user.id, read: false },
-        { $set: { read: true } }
-    );
-    return result;
+const readNotificationFromDB = async (user: JwtPayload, id: string) => {
+  const notification = await Notification.findByIdAndUpdate(
+    id,
+    { read: true },
+    { new: true },
+  ).lean();
+  if (!notification) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Notification not found");
+  }
+  return notification;
 };
 
-// get notifications for admin
-const adminNotificationFromDB = async () => {
-    const result = await Notification.find({ type: 'ADMIN' });
-    return result;
-};
-
-// read notifications only for admin
-const adminReadNotificationToDB = async (): Promise<INotification | null> => {
-    const result: any = await Notification.updateMany(
-        { type: 'ADMIN', read: false },
-        { $set: { read: true } },
-        // @ts-ignore
-        { new: true }
-    );
-    return result;
-};
 
 export const NotificationService = {
-    adminNotificationFromDB,
-    getNotificationFromDB,
-    readNotificationToDB,
-    adminReadNotificationToDB
+  getAllNotificationsFromDB,
+  readNotificationFromDB,
 };

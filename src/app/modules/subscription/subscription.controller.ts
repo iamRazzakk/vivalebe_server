@@ -6,41 +6,32 @@ import { StatusCodes } from "http-status-codes";
 
 
 const subscriptions = catchAsync( async(req: Request, res: Response)=>{
-    const result = await SubscriptionService.subscriptionsFromDB(req.query);
+    const result = await SubscriptionService.getAllSubscriptionsListFromDB(req.query);
 
     sendResponse(res, {
         statusCode: StatusCodes.OK,
         success: true,
         message: "Subscription List Retrieved Successfully",
-        data: result
+        pagination: result.total,
+        data: result.subscriptions  
     })
 });
 
 const subscriptionDetails = catchAsync( async(req: Request, res: Response)=>{
-    const result = await SubscriptionService.subscriptionDetailsFromDB(req.user);
+    const result = await SubscriptionService.updateSubscriptionStatusFromDB(req.params.id, req.body);
 
     sendResponse(res, {
         statusCode: StatusCodes.OK,
         success: true,
-        message: "Subscription Details Retrieved Successfully",
-        data: result.subscription
+        message: "Subscription Status Updated Successfully",
+        data: result
     })
 });
 
-const companySubscriptionDetails= catchAsync( async(req: Request, res: Response)=>{
-    const result = await SubscriptionService.companySubscriptionDetailsFromDB(req.params.id);
 
-    sendResponse(res, {
-        statusCode: StatusCodes.OK,
-        success: true,
-        message: "Company Subscription Details Retrieved Successfully",
-        data: result.subscription
-    })
-});
 
 
 export const SubscriptionController = {
     subscriptions,
     subscriptionDetails,
-    companySubscriptionDetails
 }

@@ -29,6 +29,9 @@ import { SuccessStoryCommentRoutes } from "../modules/success_story_comment/succ
 import { SuccessStoryLikeRoutes } from "../modules/success_story_like/success_story_like.route";
 import { OverviewRoutes } from "../modules/dashboard/overview/overview.routes";
 import { UserListRoutes } from "../modules/dashboard/user/userList.routes";
+import { ReportsRoutes } from "../modules/dashboard/reports/reports.routes";
+import { AnalyticsRoutes } from "../modules/dashboard/analytics/analytics.routes";
+import { NotificationRoutes } from "../modules/notification/notification.routes";
 const router = Router();
 
 const apiRoutes = [
@@ -62,6 +65,9 @@ const apiRoutes = [
   { path: "/success-story-comment", route: SuccessStoryCommentRoutes },
   { path: "/dashboard", route: OverviewRoutes },
   { path: "/dashboard/user-list", route: UserListRoutes },
+  { path: "/dashboard/reports", route: ReportsRoutes },
+  { path: "/dashboard/analytics", route: AnalyticsRoutes },
+  { path: "/notification", route: NotificationRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));
