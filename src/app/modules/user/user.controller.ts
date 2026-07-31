@@ -16,7 +16,7 @@ const createUser = catchAsync(
       message:
         "Your account has been successfully created. Verify Your Email By OTP. Check your email",
     });
-  }
+  },
 );
 
 // retrieved user profile
@@ -33,32 +33,33 @@ const getUserProfile = catchAsync(async (req: Request, res: Response) => {
 });
 
 //update profile
-const updateProfile = catchAsync(
-  async (req: Request, res: Response) => {
-    const user = req.user;
-    const result = await UserService.updateProfileToDB(user, req.body);
-
-    sendResponse(res, {
-      success: true,
-      statusCode: StatusCodes.OK,
-      message: "Profile updated successfully",
-      data: result,
-    });
-  }
-);
-
-
-const updateOnboardingComplete = catchAsync(async (req: Request, res: Response) => {
+const updateProfile = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
-  const result = await UserService.updateOnboardingCompleteToDB(user, req.body);
+  const result = await UserService.updateProfileToDB(user, req.body);
+
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
-    message: "Onboarding complete updated successfully",
+    message: "Profile updated successfully",
     data: result,
   });
 });
 
+const updateOnboardingComplete = catchAsync(
+  async (req: Request, res: Response) => {
+    const user = req.user;
+    const result = await UserService.updateOnboardingCompleteToDB(
+      user,
+      req.body,
+    );
+    sendResponse(res, {
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "Onboarding complete updated successfully",
+      data: result,
+    });
+  },
+);
 
 const userMatchingUsers = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.userMatchingUsersFromDB(req.user, req.query);
@@ -92,7 +93,10 @@ const insertBulkUsers = catchAsync(async (req: Request, res: Response) => {
 });
 
 const adminVerifiedUser = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserService.adminVerifiedUserToDB(req.params.id, req.body);
+  const result = await UserService.adminVerifiedUserToDB(
+    req.params.id,
+    req.body,
+  );
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
@@ -101,6 +105,15 @@ const adminVerifiedUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const verifyUser = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.verifyUserFromDB(req.user, req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "User verified successfully",
+    data: result,
+  });
+});
 export const UserController = {
   createUser,
   getUserProfile,
@@ -110,4 +123,5 @@ export const UserController = {
   getSingleUser,
   insertBulkUsers,
   adminVerifiedUser,
+  verifyUser,
 };

@@ -142,6 +142,15 @@ const userSchema = new Schema<IUser, UserModal>(
       type: Boolean,
       default: false,
     },
+    documentVerified: {
+      type: String,
+      required: false,
+    },
+    documentType: {
+      type: String,
+      enum: ["NID", "PASSPORT", "DRIVING_LICENSE"],
+      required: false,
+    },
     isBanned: {
       type: Boolean,
       default: false,

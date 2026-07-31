@@ -30,6 +30,7 @@ const UPLOAD_CONFIG: Record<string, UploadConfigItem> = {
     maxCount: 3,
     maxSize: 50 * 1024 * 1024,
   },
+
   content: {
     folder: "content",
     allowedMimeTypes: [
@@ -52,6 +53,31 @@ const UPLOAD_CONFIG: Record<string, UploadConfigItem> = {
     ],
     maxCount: 5,
     maxSize: 50 * 1024 * 1024,
+  },
+  documentVerified: {
+    folder: "documentVerified",
+    allowedMimeTypes: [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "image/webp",
+      // from iphone camera
+      "image/heic",
+      "image/heif",
+      // from android camera
+      "image/heic",
+      "image/heif",
+      // from other devices
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "image/webp",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ],
+    maxCount: 1,
+    maxSize: 50 * 1024 * 1024, //50MB
   },
   media: {
     folder: "media",

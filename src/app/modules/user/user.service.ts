@@ -333,6 +333,19 @@ const adminVerifiedUserToDB = async (id: string, payload: Partial<IUser>) => {
   return updateDoc;
 };
 
+const verifyUserFromDB = async (user: JwtPayload, payload: Partial<IUser>) => {
+  const isExistUser = await User.findOne({ _id: user.id }).lean();
+  if (!isExistUser) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+  const updateDoc = await User.findOneAndUpdate(
+    { _id: user.id },
+    { ...payload, updatedAt: new Date() },
+    { new: true },
+  );
+  return updateDoc;
+};
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
@@ -342,4 +355,5 @@ export const UserService = {
   getSingleUserFromDB,
   insertBulkUsersToDB,
   adminVerifiedUserToDB,
+  verifyUserFromDB,
 };

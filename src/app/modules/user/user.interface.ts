@@ -49,6 +49,9 @@ export type IUser = {
   relationStatus: relationStatusEnum;
   bio: string;
   premiumMembership: boolean;
+  // for user verification
+  documentVerified?: string;
+  documentType?: "NID" | "PASSPORT" | "DRIVING_LICENSE";
 
   verified: boolean;
   isBanned: boolean;

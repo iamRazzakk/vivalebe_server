@@ -1,4 +1,4 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { USER_ROLES } from "../../../enums/user";
 import { UserController } from "./user.controller";
 import { UserValidation } from "./user.validation";
@@ -9,6 +9,8 @@ import {
   getUploadFields,
 } from "../../middlewares/fileUploaderHandlarWithR2";
 import { createBlurredImage } from "../../../shared/protectedFile";
+import { StatusCodes } from "http-status-codes";
+import ApiError from "../../../errors/ApiErrors";
 
 const router = express.Router();
 
@@ -100,5 +102,34 @@ router
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
     UserController.adminVerifiedUser,
   );
-
+// for user verification from user side
+router.route("/verify").patch(
+  getUploadFields(),
+  auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+  async (req: Request, _res: Response, next: NextFunction) => {
+    try {
+      const data = req.body;
+      const documentVerified = await getSingleFilePath(
+        req.files as Record<string, Express.Multer.File[]>,
+        "documentVerified",
+      );
+      if (!documentVerified)
+        throw new ApiError(
+          StatusCodes.BAD_REQUEST,
+          "Document verified image is required",
+        );
+      if (documentVerified) data.documentVerified = documentVerified;
+      const documentType = req.body.documentType;
+      req.body = {
+        ...data,
+        documentVerified,
+        documentType,
+      };
+      next();
+    } catch (error) {
+      next(error);
+    }
+  },
+  UserController.verifyUser,
+);
 export const UserRoutes = router;
