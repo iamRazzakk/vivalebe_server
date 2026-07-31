@@ -2,6 +2,7 @@ import express from "express";
 import { WinkController } from "./wink.controller";
 import auth from "../../middlewares/auth";
 import { USER_ROLES } from "../../../enums/user";
+import requirePremiumMembership from "../../../helpers/requirePremiumMembership";
 
 const router = express.Router();
 
@@ -13,6 +14,7 @@ router
   )
   .get(
     auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    requirePremiumMembership,
     WinkController.getAllWinksForMe,
   );
 

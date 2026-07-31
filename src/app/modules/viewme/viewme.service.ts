@@ -2,6 +2,8 @@ import { JwtPayload } from "jsonwebtoken";
 import QueryBuilder from "../../builder/queryBuilder";
 import { Viewme } from "./viewme.model";
 import { Types } from "mongoose";
+import { Wink } from "../wink/wink.model";
+import { Swipe } from "../swipe/swipe.model";
 
 const getAllRecentlyViewedMeFromDB = async (
   user: JwtPayload,
@@ -25,8 +27,27 @@ const getAllRecentlyViewedMeFromDB = async (
     qb.modelQuery.lean(),
     qb.getPaginationInfo(),
   ]);
+  // need to check the likes or winked
+  const recentlyViewedMeWithWinkedAndLiked = await Promise.all(
+    recentlyViewedMe.map(async (item: any) => {
+      const wink = await Wink.findOne({
+        senderId: new Types.ObjectId(user.id),
+        receiverId: new Types.ObjectId(String(item.viewedUser._id)),
+      });
+      const liked = await Swipe.findOne({
+        fromUser: new Types.ObjectId(user.id),
+        toUser: new Types.ObjectId(String(item.viewedUser._id)),
+        action: "like",
+      });
+      return {
+        ...item,
+        isWinked: wink ? true : false,
+        isLiked: liked ? true : false,
+      };
+    }),
+  );
   return {
-    recentlyViewedMe,
+    recentlyViewedMe: recentlyViewedMeWithWinkedAndLiked,
     meta,
   };
 };
@@ -39,7 +60,7 @@ const getAllViewedMeFromDB = async (user: JwtPayload) => {
 };
 
 const resetViewedMeFromDB = async (user: JwtPayload) => {
- const result =  await Viewme.deleteMany({
+  const result = await Viewme.deleteMany({
     user: new Types.ObjectId(user.id),
   });
   return result.deletedCount;

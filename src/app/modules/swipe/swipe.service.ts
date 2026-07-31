@@ -26,7 +26,7 @@ const createSwipeUserIntoDB = async (payload: ISwipe, user: JwtPayload) => {
       toUser: fromUser,
       action: "like",
     });
-
+    console.log("result", oppositeLike);
     if (oppositeLike) {
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
@@ -237,14 +237,35 @@ const likesYouUsersFromDB = async (
     qb.modelQuery.lean(),
     qb.getPaginationInfo(),
   ]);
-
-  return { likesYouUsers, meta };
+  // need to check the likes or winked
+  const likesYouUsersWithWinkedAndLiked = await Promise.all(
+    likesYouUsers.map(async (item: any) => {
+      const wink = await Wink.findOne({
+        senderId: new Types.ObjectId(user.id),
+        receiverId: new Types.ObjectId(String(item.fromUser._id)),
+      });
+      const liked = await Swipe.findOne({
+        fromUser: new Types.ObjectId(user.id),
+        toUser: new Types.ObjectId(String(item.fromUser._id)),
+        action: "like",
+      });
+      return {
+        ...item,
+        isWinked: wink ? true : false,
+        isLiked: liked ? true : false,
+      };
+    }),
+  );
+  return { likesYouUsers: likesYouUsersWithWinkedAndLiked, meta };
 };
 
 const youLikedUsersFromDB = async (
   user: JwtPayload,
   query: Record<string, unknown>,
 ) => {
+  const toId = (ref: unknown): string =>
+    String((ref as { _id?: unknown })?._id ?? ref);
+
   const qb = new QueryBuilder(
     Swipe.find({
       fromUser: new Types.ObjectId(user.id),
@@ -266,49 +287,85 @@ const youLikedUsersFromDB = async (
     qb.getPaginationInfo(),
   ]);
 
-  const userIds = youLikedUsers.map((item: any) => item.toUser?._id);
+  const userIds = youLikedUsers
+    .map((item: any) => item.toUser?._id)
+    .filter(Boolean);
 
-  const winkRelations = await Wink.find({
-    $or: [
-      {
-        senderId: new Types.ObjectId(user.id),
-        receiverId: { $in: userIds },
-      },
-      {
-        receiverId: new Types.ObjectId(user.id),
-        senderId: { $in: userIds },
-      },
-    ],
-  })
-    .select("senderId receiverId isMatch")
-    .lean();
+  const [winks, likes] = await Promise.all([
+    Wink.find({
+      $or: [
+        {
+          senderId: new Types.ObjectId(user.id),
+          receiverId: { $in: userIds },
+        },
+        {
+          receiverId: new Types.ObjectId(user.id),
+          senderId: { $in: userIds },
+        },
+      ],
+    }).lean(),
+    Swipe.find({
+      $or: [
+        {
+          fromUser: new Types.ObjectId(user.id),
+          toUser: { $in: userIds },
+        },
+        {
+          toUser: new Types.ObjectId(user.id),
+          fromUser: { $in: userIds },
+        },
+      ],
+    }).lean(),
+  ]);
+
+  const winkRelationsWithLikes = winks.map((wink: any) => {
+    const isLiked = likes.some(
+      (like: any) => toId(like.fromUser) === toId(wink.receiverId),
+    );
+    return {
+      ...wink,
+      isLiked,
+    };
+  });
 
   const winkMap = new Map<
     string,
     {
       isWinked: boolean;
       isMatch: boolean;
+      isLiked: boolean;
     }
   >();
 
-  for (const wink of winkRelations) {
-    const isMeSender = wink.senderId.toString() === user.id;
-
+  for (const wink of winkRelationsWithLikes) {
+    const isMeSender = toId(wink.senderId) === user.id;
     const otherUserId = isMeSender
-      ? wink.receiverId.toString()
-      : wink.senderId.toString();
+      ? toId(wink.receiverId)
+      : toId(wink.senderId);
 
     winkMap.set(otherUserId, {
       isWinked: isMeSender || wink.isMatch,
       isMatch: wink.isMatch,
+      isLiked: wink.isLiked,
     });
   }
 
-  const result = youLikedUsers.map((item: any) => ({
-    ...item,
-    isWinked: winkMap.get(item.toUser._id.toString())?.isWinked ?? false,
-    isMatch: winkMap.get(item.toUser._id.toString())?.isMatch ?? false,
-  }));
+  const result = youLikedUsers.map((item: any) => {
+    const otherUserId = item.toUser?._id ? toId(item.toUser._id) : null;
+
+    return {
+      ...item,
+      isWinked: otherUserId
+        ? (winkMap.get(otherUserId)?.isWinked ?? false)
+        : false,
+      isMatch: otherUserId
+        ? (winkMap.get(otherUserId)?.isMatch ?? false)
+        : false,
+      isLiked: otherUserId
+        ? (winkMap.get(otherUserId)?.isLiked ?? false)
+        : false,
+    };
+  });
 
   return {
     youLikedUsers: result,

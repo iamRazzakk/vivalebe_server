@@ -6,6 +6,7 @@ import { sendNotificationToQueue } from "../../../helpers/notificationQueueHelpe
 import { User } from "../user/user.model";
 import ApiError from "../../../errors/ApiErrors";
 import { StatusCodes } from "http-status-codes";
+import { Swipe } from "../swipe/swipe.model";
 
 const createWinkIntoDB = async (payload: IWink, user: JwtPayload) => {
   const senderId = new Types.ObjectId(user.id);
@@ -83,26 +84,39 @@ const getAllWinksForMeFromDB = async (user: JwtPayload) => {
 
   const winks = await Wink.find({
     $or: [
-      { senderId: new Types.ObjectId(myId) },
       { receiverId: new Types.ObjectId(myId) },
+      { senderId: new Types.ObjectId(myId), isMatch: true },
     ],
   })
     .populate("senderId")
     .populate("receiverId")
     .lean();
 
-  return winks.map((wink: any) => {
+  const likes = await Swipe.find({
+    fromUser: new Types.ObjectId(myId),
+    action: "like",
+  }).lean();
+
+  const likedUserIds = new Set(likes.map((like) => like.toUser.toString()));
+
+  const winksWithLikes = winks.map((wink: any) => {
     const isMeSender = wink.senderId._id.toString() === myId;
+    const otherUser = isMeSender ? wink.receiverId : wink.senderId;
+    const otherUserId = otherUser._id.toString();
 
     return {
       _id: wink._id,
-      user: isMeSender ? wink.receiverId : wink.senderId,
+      senderId: otherUser,
       isMatch: wink.isMatch,
-      isWinked: isMeSender || wink.isMatch,
+      isLiked: likedUserIds.has(otherUserId),
+      isWinked: isMeSender,
+      direction: isMeSender ? "sent" : "received",
       createdAt: wink.createdAt,
       updatedAt: wink.updatedAt,
     };
   });
+
+  return winksWithLikes;
 };
 
 const getSingleWinkFromDB = async (id: string) => {

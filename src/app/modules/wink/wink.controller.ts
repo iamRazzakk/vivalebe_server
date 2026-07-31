@@ -13,8 +13,12 @@ const createWink = catchAsync(
     );
     sendResponse(res, {
       success: true,
-      statusCode: StatusCodes.CREATED,
-      message: "Wink created successfully",
+      statusCode:
+        wink.action === "removed" ? StatusCodes.OK : StatusCodes.CREATED,
+      message:
+        wink.action === "removed"
+          ? "Wink removed successfully"
+          : "Wink created successfully",
       data: wink,
     });
   },
