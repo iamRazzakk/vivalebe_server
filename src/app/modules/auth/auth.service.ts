@@ -21,6 +21,7 @@ import {
   dataGetFromRedis,
   dataStoreToRedis,
 } from "../../../redis/redis.store";
+import { IUser } from "../user/user.interface";
 
 //login
 const loginUserFromDB = async (payload: ILoginData) => {
@@ -37,7 +38,13 @@ const loginUserFromDB = async (payload: ILoginData) => {
       "Please verify your account first!",
     );
   }
-
+  // ban
+  if (user.isBanned) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "Your account is banned! Please contact our support team.",
+    );
+  }
   // Password match check
   const isPasswordMatched = await User.isMatchPassword(password, user.password);
   if (!isPasswordMatched) {
@@ -342,6 +349,21 @@ const deleteUserFromDB = async (user: JwtPayload, password: string) => {
   return;
 };
 
+const verifyTheUserAsAdminFromDashboard = async (
+  id: string,
+  payload: Partial<IUser>,
+) => {
+  const isExistUser = await User.findById(id);
+  if (!isExistUser) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+  const updateUser = await User.findByIdAndUpdate(id, payload, { new: true });
+  if (!updateUser) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+  return updateUser;
+};
+
 export const AuthService = {
   verifyEmailToDB,
   loginUserFromDB,
@@ -352,4 +374,5 @@ export const AuthService = {
   resendVerificationEmailToDB,
   // socialLoginFromDB,
   deleteUserFromDB,
+  verifyTheUserAsAdminFromDashboard,
 };

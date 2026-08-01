@@ -124,6 +124,19 @@ const deleteUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+
+const verifyTheUserAsAdminFromDashboard = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { ...payload } = req.body;
+  const result = await AuthService.verifyTheUserAsAdminFromDashboard(id, payload);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "User verified successfully",
+    data: result,
+  });
+});
+
 export const AuthController = {
   verifyEmail,
   loginUser,
@@ -134,4 +147,5 @@ export const AuthController = {
   resendVerificationEmail,
   // socialLogin,
   deleteUser,
+  verifyTheUserAsAdminFromDashboard,
 };

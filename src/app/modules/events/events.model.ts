@@ -44,6 +44,10 @@ const eventsSchema = new Schema<IEvents, EventsModel>(
       type: [guestSchema],
       default: [],
     },
+    price: {
+      type: Number,
+      required: true,
+    },
     isDeleted: {
       type: Boolean,
       default: false,
@@ -62,6 +66,10 @@ const eventsSchema = new Schema<IEvents, EventsModel>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+    },
+    attendPerson: {
+      type: Number,
+      default: 0,
     },
   },
   {

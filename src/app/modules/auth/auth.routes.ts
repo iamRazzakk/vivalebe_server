@@ -65,6 +65,12 @@ router.post(
 //     AuthController.socialLogin
 // );
 
+router.patch(
+  "/verify-user-as-admin/:id",
+  auth(USER_ROLES.SUPER_ADMIN),
+  AuthController.verifyTheUserAsAdminFromDashboard,
+);
+
 router.delete(
   "/delete-account",
   auth(USER_ROLES.ADMIN),

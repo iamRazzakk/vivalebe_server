@@ -86,6 +86,7 @@ router
   .route("/matches")
   .get(
     auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+    // requirePremiumMembership,
     UserController.userMatchingUsers,
   );
 
@@ -113,15 +114,20 @@ router.route("/verify").patch(
         req.files as Record<string, Express.Multer.File[]>,
         "documentVerified",
       );
-      if (!documentVerified)
+      const verifyOwnPicture = await getSingleFilePath(
+        req.files as Record<string, Express.Multer.File[]>,
+        "verifyOwnPicture",
+      );
+      if (!documentVerified || !verifyOwnPicture)
         throw new ApiError(
           StatusCodes.BAD_REQUEST,
-          "Document verified image is required",
+          `Verified ${documentVerified ? "document" : "own picture"} is required`,
         );
       if (documentVerified) data.documentVerified = documentVerified;
       const documentType = req.body.documentType;
       req.body = {
         ...data,
+        verifiedStatus: "pending",
         documentVerified,
         documentType,
       };

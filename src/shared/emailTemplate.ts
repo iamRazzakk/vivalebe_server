@@ -1,63 +1,153 @@
-import { ICreateAccount, IResetPassword } from '../types/emailTemplate';
+import { IContact } from "../app/modules/contact/contact.interface";
+import { ICreateAccount, IResetPassword } from "../types/emailTemplate";
 
-const createAccount = (values: ICreateAccount) => {
-    const data = {
-        to: values.email,
-        subject: 'Verify your account',
-        html: `
-            <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">
-                <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-    
-                    <!-- Logo -->
-                    <img src="https://res.cloudinary.com/dnsktebcu/image/upload/v1783499738/logo_mxjv2b.webp" alt="Servi Logo" style="display: block; margin: 0 auto 20px; width:150px" />
+const LOGO_URL =
+  "https://res.cloudinary.com/dnsktebcu/image/upload/v1783499738/logo_mxjv2b.webp";
+const BRAND = "Vivalebe";
+const ACCENT = "#D0A933";
+const TEXT = "#3A3A3A";
+const MUTED = "#8A8A8A";
+const BG = "#F4F4F5";
 
-                    <!-- Greeting -->
-                    <h2 style="color: #D0A933; font-size: 24px; margin-bottom: 20px;">Hey, ${values.name}!</h2>
+const emailShell = (content: string) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${BRAND}</title>
+</head>
+<body style="margin:0;padding:0;background-color:${BG};font-family:Georgia,'Times New Roman',serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:${BG};padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="height:6px;background:${ACCENT};font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+          <tr>
+            <td style="padding:36px 32px 24px;text-align:center;">
+              <img src="${LOGO_URL}" alt="${BRAND}" width="140" style="display:block;margin:0 auto 28px;width:140px;height:auto;border:0;" />
+              ${content}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 36px;text-align:center;">
+              <p style="margin:0 0 8px;color:${MUTED};font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;">
+                &copy; ${new Date().getFullYear()} ${BRAND}. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
 
-                    <!-- Verification Instructions -->
-                    <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Thank you for signing up for Servi. Please verify your email address to activate your account.</p>
+const otpBlock = (otp: number | string) => `
+  <table role="presentation" cellspacing="0" cellpadding="0" style="margin:28px auto;">
+    <tr>
+      <td style="background:${ACCENT};border-radius:12px;padding:14px 28px;">
+        <span style="display:inline-block;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:28px;font-weight:700;letter-spacing:6px;line-height:1;">
+          ${otp}
+        </span>
+      </td>
+    </tr>
+  </table>
+`;
 
-                    <!-- OTP Section -->
-                    <div style="text-align: center;">
-                        <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Your single use code is:</p>
-                        <div style="background-color: #D0A933; width: 120px; padding: 10px; text-align: center; border-radius: 8px; color: #fff; font-size: 25px; letter-spacing: 2px; margin: 20px auto;">${values.otp}</div>
-                        <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">This code is valid for 3 minutes.</p>
-                    </div>
+const createAccount = (values: ICreateAccount) => ({
+  to: values.email,
+  subject: `Verify your ${BRAND} account`,
+  html: emailShell(`
+    <h1 style="margin:0 0 12px;color:${TEXT};font-size:26px;font-weight:400;line-height:1.3;">
+      Hey, ${values.name}
+    </h1>
+    <p style="margin:0 0 8px;color:${TEXT};font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;">
+      Welcome to ${BRAND}. Use this code to verify your email and activate your account.
+    </p>
+    <p style="margin:24px 0 0;color:${MUTED};font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:0.4px;text-transform:uppercase;">
+      Your verification code
+    </p>
+    ${otpBlock(values.otp)}
+    <p style="margin:0 0 24px;color:${TEXT};font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;">
+      This code expires in <strong style="color:${ACCENT};">3 minutes</strong>.
+    </p>
+    <p style="margin:0;color:${MUTED};font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;">
+      If you didn’t create a ${BRAND} account, you can safely ignore this email.
+    </p>
+  `),
+});
 
-                    <!-- Footer -->
-                    <p style="color: #999; font-size: 12px; text-align: center; margin-top: 30px;">If you did not sign up for Servi, please ignore this email.</p>
-                    <p style="color: #999; font-size: 12px; text-align: center;">&copy; 2024 Servi. All rights reserved.</p>
+const resetPassword = (values: IResetPassword) => ({
+  to: values.email,
+  subject: `Reset your ${BRAND} password`,
+  html: emailShell(`
+    <h1 style="margin:0 0 12px;color:${TEXT};font-size:26px;font-weight:400;line-height:1.3;">
+      Reset your password
+    </h1>
+    <p style="margin:0 0 8px;color:${TEXT};font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;">
+      We received a request to reset your password. Enter this code to continue.
+    </p>
+    <p style="margin:24px 0 0;color:${MUTED};font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:0.4px;text-transform:uppercase;">
+      Your reset code
+    </p>
+    ${otpBlock(values.otp)}
+    <p style="margin:0 0 24px;color:${TEXT};font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;">
+      This code expires in <strong style="color:${ACCENT};">3 minutes</strong>.
+    </p>
+    <p style="margin:0;color:${MUTED};font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;">
+      If you didn’t request this, ignore this email — your password won’t change.
+    </p>
+  `),
+});
 
-                </div>
-            </body>
-        `
-    }
+const contactEmailTemp = (values: IContact) => ({
+  to: values.email,
+  subject: `We received your message — ${BRAND}`,
+  html: emailShell(`
+    <h1 style="margin:0 0 12px;color:${TEXT};font-size:26px;font-weight:400;line-height:1.3;">
+      Thanks, ${values.name}
+    </h1>
+    <p style="margin:0 0 20px;color:${TEXT};font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;">
+      We’ve received your message and will get back to you soon.
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FAFAF8;border-radius:12px;text-align:left;">
+      <tr>
+        <td style="padding:20px 22px;">
+          <p style="margin:0 0 6px;color:${MUTED};font-family:Arial,Helvetica,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;">Subject</p>
+          <p style="margin:0 0 16px;color:${TEXT};font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;">${values.subject}</p>
+          <p style="margin:0 0 6px;color:${MUTED};font-family:Arial,Helvetica,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;">Message</p>
+          <p style="margin:0;color:${TEXT};font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;white-space:pre-wrap;">${values.message}</p>
+        </td>
+      </tr>
+    </table>
+  `),
+});
 
-    return data;
-}
-
-
-const resetPassword = (values: IResetPassword) => {
-    const data = {
-        to: values.email,
-        subject: 'Reset your password',
-        html: `
-            <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">
-                <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                    <img src="https://res.cloudinary.com/dnsktebcu/image/upload/v1783499738/logo_mxjv2b.webp" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
-                    <div style="text-align: center;">
-                        <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Your single use code is:</p>
-                        <div style="background-color: #277E16; width: 120px; padding: 10px; text-align: center; border-radius: 8px; color: #fff; font-size: 25px; letter-spacing: 2px; margin: 20px auto;">${values.otp}</div>
-                        <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">This code is valid for 3 minutes.</p>
-                    </div>
-                </div>
-            </body>
-        `,
-    };
-    return data;
-};
+const feedbackEmailTemp = (values: IContact) => ({
+  to: values.email,
+  subject: `Thank you for your message — ${BRAND}`,
+  html: emailShell(`
+    <h1 style="margin:0 0 12px;color:${TEXT};font-size:26px;font-weight:400;line-height:1.3;">
+      Thank you, ${values.name}
+    </h1>
+    <p style="margin:0 0 20px;color:${TEXT};font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;">
+      Thank you for your message. We’ve received your message and will get back to you soon.
+      <br>
+      <br>
+      Best regards,
+      <br>
+      ${BRAND} Team
+    </p>
+  `),
+});
 
 export const emailTemplate = {
-    createAccount,
-    resetPassword
+  createAccount,
+  resetPassword,
+  contactEmailTemp,
+  feedbackEmailTemp,
 };

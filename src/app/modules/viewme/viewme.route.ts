@@ -10,7 +10,7 @@ router
   .route("/")
   .get(
     auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    requirePremiumMembership,
+    // requirePremiumMembership,
     ViewMeController.getAllRecentlyViewedMe,
   );
 

@@ -32,7 +32,7 @@ router
   .route("/likes-you")
   .get(
     auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    requirePremiumMembership,
+    // requirePremiumMembership,
     SwipeController.likesYouUsers,
   );
 
@@ -40,7 +40,7 @@ router
   .route("/you-liked")
   .get(
     auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    requirePremiumMembership,
+    // requirePremiumMembership,
     SwipeController.youLikedUsers,
   );
 

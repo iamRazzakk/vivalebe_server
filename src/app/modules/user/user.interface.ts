@@ -29,7 +29,6 @@ export type IUser = {
   status: "ACTIVE" | "DEACTIVE";
   phone: string;
   protectedImages: string;
-  isAdminVerified: boolean;
 
   // updated data interface
   gender: genderEnum;
@@ -49,7 +48,10 @@ export type IUser = {
   relationStatus: relationStatusEnum;
   bio: string;
   premiumMembership: boolean;
+  verifyOwnPicture: boolean;
   // for user verification
+  isAdminVerified: boolean;
+  verifiedStatus?: "pending" | "verified" | "rejected";
   documentVerified?: string;
   documentType?: "NID" | "PASSPORT" | "DRIVING_LICENSE";
 

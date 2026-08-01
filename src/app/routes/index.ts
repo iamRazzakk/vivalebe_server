@@ -32,6 +32,8 @@ import { UserListRoutes } from "../modules/dashboard/user/userList.routes";
 import { ReportsRoutes } from "../modules/dashboard/reports/reports.routes";
 import { AnalyticsRoutes } from "../modules/dashboard/analytics/analytics.routes";
 import { NotificationRoutes } from "../modules/notification/notification.routes";
+import { EventBookingRoutes } from "../modules/eventbooking/eventbooking.route";
+import { ContactRoutes } from "../modules/contact/contact.route";
 const router = Router();
 
 const apiRoutes = [
@@ -68,6 +70,8 @@ const apiRoutes = [
   { path: "/dashboard/reports", route: ReportsRoutes },
   { path: "/dashboard/analytics", route: AnalyticsRoutes },
   { path: "/notification", route: NotificationRoutes },
+  { path: "/event-booking", route: EventBookingRoutes },
+  { path: "/contact", route: ContactRoutes },
 ];
 
 apiRoutes.forEach((route) => router.use(route.path, route.route));

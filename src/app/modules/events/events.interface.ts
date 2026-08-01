@@ -12,10 +12,10 @@ export type IEvents = {
   startTime: Date;
   details: string;
   guests: IGuest[];
-
+  price: number;
   visibility: "private" | "public";
   status: "upcoming" | "completed" | "cancelled";
-
+  attendPerson?: number;
   isDeleted: boolean;
   eventOwner: Types.ObjectId;
 };

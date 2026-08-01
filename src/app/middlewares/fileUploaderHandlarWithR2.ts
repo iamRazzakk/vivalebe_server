@@ -79,6 +79,27 @@ const UPLOAD_CONFIG: Record<string, UploadConfigItem> = {
     maxCount: 1,
     maxSize: 50 * 1024 * 1024, //50MB
   },
+  verifyOwnPicture: {
+    folder: "verifyOwnPicture",
+    allowedMimeTypes: [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "image/webp",
+      "image/heic",
+      "image/heif",
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "image/webp",
+      "image/gif",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ],
+    maxCount: 1,
+    maxSize: 50 * 1024 * 1024, //50MB
+  },
   media: {
     folder: "media",
     allowedMimeTypes: [
