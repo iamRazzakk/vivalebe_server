@@ -23,12 +23,12 @@ const createEventBookingInDB = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, "Event not found");
   }
 
-  if (event.status !== "upcoming") {
-    throw new ApiError(
-      StatusCodes.BAD_REQUEST,
-      "Only upcoming events can be booked",
-    );
-  }
+  // if (event.status !== "upcoming") {
+  //   throw new ApiError(
+  //     StatusCodes.BAD_REQUEST,
+  //     "Only upcoming events can be booked",
+  //   );
+  // }
 
   if (event.eventOwner.toString() === user.id) {
     throw new ApiError(
@@ -37,34 +37,45 @@ const createEventBookingInDB = async (
     );
   }
 
-  const existingBooking = await EventBooking.findOne({
+  // Already paid = real booking
+  const paidBooking = await EventBooking.findOne({
     eventId: payload.eventId,
     userId: user.id,
     isDeleted: false,
-    paymentStatus: { $ne: "failed" },
+    paymentStatus: "paid",
   });
 
-  if (existingBooking) {
-    if (
-      existingBooking.paymentStatus === "pending" &&
-      existingBooking.checkoutSessionId
-    ) {
-      const existingSession = await stripe.checkout.sessions.retrieve(
-        existingBooking.checkoutSessionId,
-      );
-
-      if (existingSession.status === "open" && existingSession.url) {
-        return {
-          booking: existingBooking,
-          checkoutUrl: existingSession.url,
-        };
-      }
-    }
-
+  if (paidBooking) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
       "You already have a booking for this event",
     );
+  }
+
+  const pendingBooking = await EventBooking.findOne({
+    eventId: payload.eventId,
+    userId: user.id,
+    isDeleted: false,
+    paymentStatus: "pending",
+  });
+
+  if (pendingBooking?.checkoutSessionId) {
+    const existingSession = await stripe.checkout.sessions.retrieve(
+      pendingBooking.checkoutSessionId,
+    );
+
+    if (existingSession.status === "open" && existingSession.url) {
+      return {
+        booking: pendingBooking,
+        checkoutUrl: existingSession.url,
+      };
+    }
+
+    await EventBooking.findByIdAndUpdate(pendingBooking._id, {
+      paymentStatus: "failed",
+      failureReason: "Checkout abandoned or expired",
+      isDeleted: true,
+    });
   }
 
   const dbUser = await User.findById(user.id).select("email name");
@@ -72,6 +83,7 @@ const createEventBookingInDB = async (
     throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
   }
 
+  // Temporary hold only — NOT a completed booking
   const booking = await EventBooking.create({
     eventId: payload.eventId,
     userId: user.id,
@@ -81,13 +93,6 @@ const createEventBookingInDB = async (
     paymentDate: null,
     bookingRequest: "pending",
   });
-
-  if (!booking) {
-    throw new ApiError(
-      StatusCodes.BAD_REQUEST,
-      "Failed to create event booking",
-    );
-  }
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: "payment",
@@ -120,6 +125,7 @@ const createEventBookingInDB = async (
     success_url: `${config.stripe.paymentSuccess}?bookingId=${booking._id}&status=success`,
     cancel_url: `${config.stripe.paymentSuccess}?bookingId=${booking._id}&status=cancelled`,
   };
+
   const eventOwner = await User.findById(event.eventOwner).select(
     "accountInformation",
   );
@@ -129,6 +135,12 @@ const createEventBookingInDB = async (
       application_fee_amount: Math.round(event.price * 100 * 0.1),
       transfer_data: {
         destination: eventOwner.accountInformation.stripeAccountId,
+      },
+      metadata: {
+        type: "event_booking",
+        bookingId: String(booking._id),
+        eventId: String(payload.eventId),
+        userId: String(user.id),
       },
     };
   }
