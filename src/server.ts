@@ -36,7 +36,10 @@ async function main() {
 
     await import("./worker/email.worker");
 
-    await mongoose.connect(config.database_url as string);
+    logger.info(colors.cyan(`Mongo URI: ${config.database_url}`));
+    await mongoose.connect(config.database_url as string, {
+      serverSelectionTimeoutMS: 15000,
+    });
     logger.info(colors.green("🚀 Database connected successfully"));
     await seedSuperAdmin();
 
