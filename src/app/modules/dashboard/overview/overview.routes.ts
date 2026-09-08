@@ -10,6 +10,8 @@ router.get(
   OverviewController.getOverviewData,
 );
 
+// admin
+
 router.get(
   "/user-activity",
   auth(USER_ROLES.SUPER_ADMIN),
