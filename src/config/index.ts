@@ -1,11 +1,19 @@
 import dotenv from "dotenv";
+import fs from "fs";
 import path from "path";
 dotenv.config({ path: path.join(process.cwd(), ".env") });
 
+const runningInDocker = fs.existsSync("/.dockerenv");
+
+const dockerServiceHost = (url: string | undefined, service: string) => {
+  if (!url || !runningInDocker) return url;
+  return url.replace(/localhost|127\.0\.0\.1/g, service);
+};
+
 export default {
-  ip_address: process.env.IP,
+  ip_address: process.env.IP || "0.0.0.0",
   port: process.env.PORT,
-  database_url: process.env.DATABASE_URL,
+  database_url: dockerServiceHost(process.env.DATABASE_URL, "mongodb"),
   node_env: process.env.NODE_ENV,
   bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
   jwt: {
@@ -58,7 +66,7 @@ export default {
 
   // rabbitmq
   rabbitmq: {
-    url: process.env.RABBITMQ_URL!,
+    url: dockerServiceHost(process.env.RABBITMQ_URL, "rabbitmq")!,
     emailQueue: process.env.EMAIL_QUEUE!,
     emailRetryQueue: process.env.EMAIL_RETRY_QUEUE!,
     emailFailedQueue: process.env.EMAIL_FAILED_QUEUE!,
