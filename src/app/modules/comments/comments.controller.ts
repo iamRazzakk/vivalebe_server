@@ -5,13 +5,13 @@ import { JwtPayload } from 'jsonwebtoken';
 import sendResponse from '../../../shared/sendResponse';
 import { StatusCodes } from 'http-status-codes';
 import { getChannel } from '../../../config/rabbitmq';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 const COMMENT_QUEUE = "comment_processing_queue";
 
 const createComments = catchAsync(async (req: Request, res: Response) => {
     const user = req.user as JwtPayload;
-    const trackingId = req.body.trackingId || uuidv4();
+    const trackingId = req.body.trackingId || crypto.randomUUID();
 
     const payload = {
         comment: req.body.comment,

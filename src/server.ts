@@ -7,9 +7,6 @@ import { socketHelper } from "./helpers/socketHelper";
 import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import seedSuperAdmin from "./DB";
-import "./worker/email.worker"; // Start BullMQ worker
-// redis client
-import "./config/redis.config";
 import redisClient, { RedisClient } from "./config/redis.config";
 import { bootstrap } from "./handlers/rabbitmq.wrapper";
 import ApiError from "./errors/ApiErrors";
@@ -27,8 +24,6 @@ let server: any;
 
 async function main() {
   try {
-    // create super admin
-    seedSuperAdmin();
     startLikeFlushJob();
     startSubscriptionExpiryJob();
     const redisConnected = await RedisClient.connect();
@@ -39,8 +34,11 @@ async function main() {
       );
     }
 
+    await import("./worker/email.worker");
+
     await mongoose.connect(config.database_url as string);
     logger.info(colors.green("🚀 Database connected successfully"));
+    await seedSuperAdmin();
 
     await bootstrap();
 

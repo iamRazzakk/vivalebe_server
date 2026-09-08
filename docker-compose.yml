@@ -6,7 +6,9 @@ x-app: &app
     - "5000"
   environment: &app-env
     PORT: "5000"
+    IP: "0.0.0.0"
     IP_ADDRESS: "0.0.0.0"
+    DATABASE_URL: mongodb://mongodb:27017/vivaleveDB
     REDIS_HOST: redis
     REDIS_PORT: "6379"
     BULLMQIP: redis
@@ -14,9 +16,16 @@ x-app: &app
     MEILI_HOST: http://meilisearch:7700
     RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
   depends_on:
-    - redis
-    - meilisearch
-    - rabbitmq
+    redis:
+      condition: service_healthy
+    mongodb:
+      condition: service_started
+    meilisearch:
+      condition: service_started
+    rabbitmq:
+      condition: service_started
+  networks:
+    - backend
   restart: unless-stopped
 
 services:
@@ -60,15 +69,27 @@ services:
       - app2
       - app3
       - app4
+    networks:
+      - backend
     restart: unless-stopped
 
   redis:
     image: redis:latest
-    container_name: redis-server
+    container_name: vivaleve-redis
     ports:
       - "6379:6379"
     volumes:
       - redisdata:/data
+    networks:
+      backend:
+        aliases:
+          - redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     restart: unless-stopped
 
   meilisearch:
@@ -80,6 +101,8 @@ services:
       MEILI_MASTER_KEY: ${MEILI_API_KEY}
     volumes:
       - meilisearchdata:/data
+    networks:
+      - backend
     restart: unless-stopped
 
   rabbitmq:
@@ -93,6 +116,8 @@ services:
       RABBITMQ_DEFAULT_PASS: admin
     volumes:
       - rabbitmqdata:/var/lib/rabbitmq
+    networks:
+      - backend
     restart: unless-stopped
 
   mongodb:
@@ -102,7 +127,13 @@ services:
       - "27017:27017"
     volumes:
       - mongodata:/data/db
+    networks:
+      - backend
     restart: unless-stopped
+
+networks:
+  backend:
+    driver: bridge
 
 volumes:
   redisdata:
