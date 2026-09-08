@@ -5,11 +5,12 @@ import { errorLogger, logger } from "./shared/logger";
 import colors from "colors";
 import { socketHelper } from "./helpers/socketHelper";
 import { Server } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
 import seedSuperAdmin from "./DB";
 import "./worker/email.worker"; // Start BullMQ worker
 // redis client
 import "./config/redis.config";
-import { RedisClient } from "./config/redis.config";
+import redisClient, { RedisClient } from "./config/redis.config";
 import { bootstrap } from "./handlers/rabbitmq.wrapper";
 import ApiError from "./errors/ApiErrors";
 import { StatusCodes } from "http-status-codes";
@@ -52,13 +53,18 @@ async function main() {
       );
     });
 
-    //socket
+    // socket.io shares the HTTP server; path stays default `/socket.io/`
     const io = new Server(server, {
       pingTimeout: 60000,
+      pingInterval: 25000,
       cors: {
         origin: "*",
       },
     });
+
+    // 4 instances: emit via Redis so getMessage / get-notification reach every client
+    const subClient = redisClient.duplicate();
+    io.adapter(createAdapter(redisClient, subClient));
 
     socketHelper.socket(io);
     //@ts-ignore
