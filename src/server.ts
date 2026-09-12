@@ -35,8 +35,6 @@ async function main() {
     }
 
     await import("./worker/email.worker");
-
-    logger.info(colors.cyan(`Mongo URI: ${config.database_url}`));
     await mongoose.connect(config.database_url as string, {
       serverSelectionTimeoutMS: 15000,
     });

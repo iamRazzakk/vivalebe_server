@@ -61,11 +61,47 @@ router
     PrivateAlbumController.getPrivateAlbumForMe,
   );
 
-router
-  .route("/:id")
-  .patch(
-    auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
-    PrivateAlbumController.updatePrivateAlbum,
-  );
+router.route("/:id").patch(
+  auth(USER_ROLES.USER, USER_ROLES.SUPER_ADMIN),
+  getUploadFields(),
+  async (req: Request, _res: Response, next: NextFunction) => {
+    try {
+      const data = req.body;
+      const imageFiles =
+        (req.files as Record<string, Express.Multer.File[]>)?.image ?? [];
+
+      const images =
+        (await getMultipleFilesPath(
+          req.files as Record<string, Express.Multer.File[]>,
+          "image",
+        )) ?? [];
+      const media =
+        (await getMultipleFilesPath(
+          req.files as Record<string, Express.Multer.File[]>,
+          "media",
+        )) ?? [];
+
+      const protectedImages: string[] = [];
+      for (const file of imageFiles) {
+        if (file.mimetype.startsWith("image/")) {
+          const blurPath = await createBlurredImage(file);
+          if (blurPath) protectedImages.push(blurPath);
+        }
+      }
+
+      req.body = {
+        ...data,
+        images,
+        media,
+        user: req.user!.id,
+        protectedImages,
+      };
+      next();
+    } catch (error) {
+      next(error);
+    }
+  },
+  PrivateAlbumController.updatePrivateAlbum,
+);
 
 export const PrivateAlbumRoutes = router;

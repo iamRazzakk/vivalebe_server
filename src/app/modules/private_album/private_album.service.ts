@@ -10,6 +10,12 @@ const createPrivateAlbum = async (
   user: JwtPayload,
 ) => {
   privateAlbum.user = new Types.ObjectId(user.id);
+  const exist = await PrivateAlbum.findOne({
+    user: new Types.ObjectId(user.id),
+  });
+  if (exist) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Private album already exists");
+  }
   const newPrivateAlbum = await PrivateAlbum.create(privateAlbum);
   return newPrivateAlbum;
 };

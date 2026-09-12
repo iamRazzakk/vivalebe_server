@@ -39,7 +39,6 @@ const createPrivateFileAccessIntoDB = async (
 };
 
 const getMyPrivateFileAccessFromDB = async (user: JwtPayload) => {
-  console.log("This");
   const result = await PrivateFileAccess.find({
     isAccessGranted: false,
     $or: [
