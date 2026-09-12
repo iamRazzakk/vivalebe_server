@@ -26,7 +26,6 @@ const createSwipeUserIntoDB = async (payload: ISwipe, user: JwtPayload) => {
       toUser: fromUser,
       action: "like",
     });
-    console.log("result", oppositeLike);
     if (oppositeLike) {
       throw new ApiError(
         StatusCodes.BAD_REQUEST,

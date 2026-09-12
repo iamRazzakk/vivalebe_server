@@ -3,7 +3,7 @@ import { ICreateAccount, IResetPassword } from "../types/emailTemplate";
 
 const LOGO_URL =
   "https://res.cloudinary.com/dnsktebcu/image/upload/v1783499738/logo_mxjv2b.webp";
-const BRAND = "Vivalebe";
+const BRAND = "Sigaleve";
 const ACCENT = "#D0A933";
 const TEXT = "#3A3A3A";
 const MUTED = "#8A8A8A";
