@@ -2,7 +2,7 @@ import { IContact } from "../app/modules/contact/contact.interface";
 import { ICreateAccount, IResetPassword } from "../types/emailTemplate";
 
 const LOGO_URL =
-  "https://res.cloudinary.com/dnsktebcu/image/upload/v1783499738/logo_mxjv2b.webp";
+  "https://res.cloudinary.com/dnsktebcu/image/upload/v1789462289/image_uiidjd.png";
 const BRAND = "Sigaleve";
 const ACCENT = "#D0A933";
 const TEXT = "#3A3A3A";
@@ -83,7 +83,7 @@ const createAccount = (values: ICreateAccount) => ({
 
 const resetPassword = (values: IResetPassword) => ({
   to: values.email,
-  subject: `Reset your ${BRAND} password`,
+  subject: `From ${BRAND}`,
   html: emailShell(`
     <h1 style="margin:0 0 12px;color:${TEXT};font-size:26px;font-weight:400;line-height:1.3;">
       Reset your password
