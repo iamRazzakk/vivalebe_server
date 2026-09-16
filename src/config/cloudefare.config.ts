@@ -4,61 +4,25 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import dotenv from "dotenv";
-import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { StatusCodes } from "http-status-codes";
 import ApiError from "../errors/ApiErrors";
-import ".";
+import { envPath } from ".";
 
-type R2FileConfig = {
-  accessKeyId: string;
-  secretAccessKey: string;
-  endpoint: string;
-  bucket: string;
-  publicUrl: string;
-};
-
-const readR2FileConfig = (): R2FileConfig => {
-  const envPath = path.join(process.cwd(), ".env");
-  const fromFile = fs.existsSync(envPath)
-    ? dotenv.parse(fs.readFileSync(envPath))
-    : {};
-
-  // Never use CLOUDFARE_API_TOKEN or AWS_ACCESS_KEY_ID.
-  const accessKeyId = (
-    fromFile.CLOUDFARE_ACCESS_KEY_ID ||
-    process.env.CLOUDFARE_ACCESS_KEY_ID ||
-    ""
-  ).trim();
-  const secretAccessKey = (
-    fromFile.CLOUDFARE_SECRET_ACCESS_KEY ||
-    process.env.CLOUDFARE_SECRET_ACCESS_KEY ||
-    ""
-  ).trim();
-  const endpoint = (
-    fromFile.CLOUDFARE_R2_ENDPOINT ||
-    process.env.CLOUDFARE_R2_ENDPOINT ||
-    ""
-  ).trim();
-  const bucket = (
-    fromFile.R2_BUCKET_NAME ||
-    process.env.R2_BUCKET_NAME ||
-    ""
-  ).trim();
-  const publicUrl = (
-    fromFile.CLOUDFARE_R2_PUBLIC_URL ||
-    process.env.CLOUDFARE_R2_PUBLIC_URL ||
-    ""
-  ).trim();
+const readR2Config = () => {
+  const accessKeyId = (process.env.CLOUDFARE_ACCESS_KEY_ID || "").trim();
+  const secretAccessKey = (process.env.CLOUDFARE_SECRET_ACCESS_KEY || "").trim();
+  const endpoint = (process.env.CLOUDFARE_R2_ENDPOINT || "").trim();
+  const bucket = (process.env.R2_BUCKET_NAME || "").trim();
+  const publicUrl = (process.env.CLOUDFARE_R2_PUBLIC_URL || "").trim();
 
   return { accessKeyId, secretAccessKey, endpoint, bucket, publicUrl };
 };
 
 const r2PublicBaseUrl = () => {
-  const { publicUrl, endpoint, bucket } = readR2FileConfig();
+  const { publicUrl, endpoint, bucket } = readR2Config();
   if (publicUrl) {
     return publicUrl.replace(/\/$/, "");
   }
@@ -72,7 +36,14 @@ const getR2Client = () => {
     return r2Client;
   }
 
-  const { accessKeyId, secretAccessKey, endpoint } = readR2FileConfig();
+  const { accessKeyId, secretAccessKey, endpoint, bucket } = readR2Config();
+
+  if (!accessKeyId || !secretAccessKey || !endpoint || !bucket) {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      `R2 env missing on this process. envFile=${envPath || "NOT FOUND"} cwd=${process.cwd()}. Set CLOUDFARE_ACCESS_KEY_ID, CLOUDFARE_SECRET_ACCESS_KEY, CLOUDFARE_R2_ENDPOINT, R2_BUCKET_NAME.`,
+    );
+  }
 
   if (accessKeyId.startsWith("cfat_") || accessKeyId.length !== 32) {
     throw new ApiError(
@@ -92,31 +63,6 @@ const getR2Client = () => {
     requestChecksumCalculation: "WHEN_REQUIRED",
     responseChecksumValidation: "WHEN_REQUIRED",
   });
-
-  r2Client.middlewareStack.add(
-    (next) => async (args) => {
-      const headers =
-        ((args.request as { headers?: Record<string, string> })?.headers) ||
-        {};
-      const auth = String(headers.authorization ?? headers.Authorization ?? "");
-      const signedKey = /Credential=([^/,]+)/.exec(auth)?.[1] || "";
-      if (
-        signedKey &&
-        (signedKey.startsWith("cfat_") || signedKey.length !== 32)
-      ) {
-        throw new ApiError(
-          StatusCodes.INTERNAL_SERVER_ERROR,
-          `R2 signing used access key length ${signedKey.length}, expected 32. Check CLOUDFARE_ACCESS_KEY_ID, not CLOUDFARE_API_TOKEN.`,
-        );
-      }
-      return next(args);
-    },
-    {
-      step: "finalizeRequest",
-      name: "assertR2AccessKeyIdLength",
-      priority: "low",
-    },
-  );
 
   return r2Client;
 };
@@ -140,7 +86,7 @@ export const uploadBufferToR2 = async (params: {
   folder: string;
 }): Promise<{ key: string; url: string }> => {
   const key = buildObjectKey(params.folder, params.originalname);
-  const { accessKeyId, bucket } = readR2FileConfig();
+  const { accessKeyId, bucket } = readR2Config();
   try {
     await getR2Client().send(
       new PutObjectCommand({
@@ -179,7 +125,7 @@ export const uploadMulterFileToR2 = async (
 };
 
 export const deleteFromR2 = async (keyOrUrl: string) => {
-  const { bucket } = readR2FileConfig();
+  const { bucket } = readR2Config();
   const key = keyOrUrl.includes("://")
     ? keyOrUrl.replace(r2PublicBaseUrl() + "/", "")
     : keyOrUrl.replace(/^\//, "");
@@ -192,7 +138,7 @@ export const deleteFromR2 = async (keyOrUrl: string) => {
 };
 
 export const getR2SignedUrl = async (key: string, expiresIn = 3600) => {
-  const { bucket } = readR2FileConfig();
+  const { bucket } = readR2Config();
   return getSignedUrl(
     getR2Client(),
     new GetObjectCommand({

@@ -2,8 +2,22 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 
-const envPath = path.join(process.cwd(), ".env");
-dotenv.config({ path: envPath });
+const envCandidates = [
+  path.join(process.cwd(), ".env"),
+  path.join(process.cwd(), "..", ".env"),
+  path.resolve(__dirname, "../../.env"),
+  path.resolve(__dirname, "../.env"),
+];
+
+export const envPath = envCandidates.find((candidate) =>
+  fs.existsSync(candidate),
+);
+
+if (envPath) {
+  dotenv.config({ path: envPath });
+} else {
+  dotenv.config();
+}
 
 delete process.env.AWS_ACCESS_KEY_ID;
 delete process.env.AWS_SECRET_ACCESS_KEY;
@@ -12,7 +26,7 @@ delete process.env.AWS_PROFILE;
 delete process.env.AWS_ACCESS_KEY;
 delete process.env.AWS_SECRET_KEY;
 
-if (fs.existsSync(envPath)) {
+if (envPath) {
   const fromFile = dotenv.parse(fs.readFileSync(envPath));
   for (const key of [
     "CLOUDFARE_ACCESS_KEY_ID",
