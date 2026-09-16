@@ -4,24 +4,69 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import config from ".";
 import path from "path";
 import { randomUUID } from "crypto";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { StatusCodes } from "http-status-codes";
 import ApiError from "../errors/ApiErrors";
+import { envPath } from ".";
 
-const r2Client = new S3Client({
-  region: "auto",
-  endpoint: config.cloudflare.CLOUDFLARE_API_URL,
-  credentials: {
-    accessKeyId: config.cloudflare.CLOUDFLARE_API_KEY,
-    secretAccessKey: config.cloudflare.CLOUDFLARE_SECRET_KEY,
-  },
-  forcePathStyle: true,
-});
+const readR2Config = () => {
+  const accessKeyId = (process.env.CLOUDFARE_ACCESS_KEY_ID || "").trim();
+  const secretAccessKey = (process.env.CLOUDFARE_SECRET_ACCESS_KEY || "").trim();
+  const endpoint = (process.env.CLOUDFARE_R2_ENDPOINT || "").trim();
+  const bucket = (process.env.R2_BUCKET_NAME || "").trim();
+  const publicUrl = (process.env.CLOUDFARE_R2_PUBLIC_URL || "").trim();
 
-// url sanitizer
+  return { accessKeyId, secretAccessKey, endpoint, bucket, publicUrl };
+};
+
+const r2PublicBaseUrl = () => {
+  const { publicUrl, endpoint, bucket } = readR2Config();
+  if (publicUrl) {
+    return publicUrl.replace(/\/$/, "");
+  }
+  return `${endpoint.replace(/\/$/, "")}/${bucket}`;
+};
+
+let r2Client: S3Client | undefined;
+
+const getR2Client = () => {
+  if (r2Client) {
+    return r2Client;
+  }
+
+  const { accessKeyId, secretAccessKey, endpoint, bucket } = readR2Config();
+
+  if (!accessKeyId || !secretAccessKey || !endpoint || !bucket) {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      `R2 env missing on this process. envFile=${envPath || "NOT FOUND"} cwd=${process.cwd()}. Set CLOUDFARE_ACCESS_KEY_ID, CLOUDFARE_SECRET_ACCESS_KEY, CLOUDFARE_R2_ENDPOINT, R2_BUCKET_NAME.`,
+    );
+  }
+
+  if (accessKeyId.startsWith("cfat_") || accessKeyId.length !== 32) {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      `Invalid R2 Access Key ID (length ${accessKeyId.length}). Use CLOUDFARE_ACCESS_KEY_ID (32 chars). Do not use CLOUDFARE_API_TOKEN.`,
+    );
+  }
+
+  r2Client = new S3Client({
+    region: "auto",
+    endpoint,
+    forcePathStyle: true,
+    credentials: {
+      accessKeyId,
+      secretAccessKey,
+    },
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
+  });
+
+  return r2Client;
+};
+
 const sanitizerFileName = (name: string) =>
   name
     .replace(/\s+/g, "-")
@@ -41,10 +86,11 @@ export const uploadBufferToR2 = async (params: {
   folder: string;
 }): Promise<{ key: string; url: string }> => {
   const key = buildObjectKey(params.folder, params.originalname);
+  const { accessKeyId, bucket } = readR2Config();
   try {
-    await r2Client.send(
+    await getR2Client().send(
       new PutObjectCommand({
-        Bucket: config.cloudflare.CLOUDFLARE_BUCKET_NAME,
+        Bucket: bucket,
         Key: key,
         Body: params.buffer,
         ContentType: params.mimetype,
@@ -54,12 +100,12 @@ export const uploadBufferToR2 = async (params: {
   } catch (error) {
     throw new ApiError(
       StatusCodes.INTERNAL_SERVER_ERROR,
-      `Failed to upload file to R2: ${(error as Error).message}`,
+      `Failed to upload file to R2: ${(error as Error).message} (local CLOUDFARE_ACCESS_KEY_ID length=${accessKeyId.length})`,
     );
   }
   return {
     key,
-    url: `${config.cloudflare.CLOUDFLARE_PUBLIC_URL.replace(/\/$/, "")}/${key}`,
+    url: `${r2PublicBaseUrl()}/${key}`,
   };
 };
 
@@ -79,30 +125,30 @@ export const uploadMulterFileToR2 = async (
 };
 
 export const deleteFromR2 = async (keyOrUrl: string) => {
+  const { bucket } = readR2Config();
   const key = keyOrUrl.includes("://")
-    ? keyOrUrl.replace(
-        config.cloudflare.CLOUDFLARE_PUBLIC_URL.replace(/\/$/, "") + "/",
-        "",
-      )
+    ? keyOrUrl.replace(r2PublicBaseUrl() + "/", "")
     : keyOrUrl.replace(/^\//, "");
-  await r2Client.send(
+  await getR2Client().send(
     new DeleteObjectCommand({
-      Bucket: config.cloudflare.CLOUDFLARE_BUCKET_NAME,
+      Bucket: bucket,
       Key: key,
     }),
   );
 };
-/** Private objects (e.g. private album) — short-lived URL */
+
 export const getR2SignedUrl = async (key: string, expiresIn = 3600) => {
+  const { bucket } = readR2Config();
   return getSignedUrl(
-    r2Client,
+    getR2Client(),
     new GetObjectCommand({
-      Bucket: config.cloudflare.CLOUDFLARE_BUCKET_NAME,
+      Bucket: bucket,
       Key: key,
     }),
     { expiresIn },
   );
 };
+
 export const r2Service = {
   uploadBufferToR2,
   uploadMulterFileToR2,

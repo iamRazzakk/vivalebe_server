@@ -166,12 +166,6 @@ const resetPasswordToDB = async (
   if (!isExistUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
-  // if (!isExistUser?.authentication?.isResetPassword) {
-  //   throw new ApiError(
-  //     StatusCodes.UNAUTHORIZED,
-  //     "You don't have permission to change the password. Please click again to 'Forgot Password'",
-  //   );
-  // }
 
   //validity check
   const isValid = await ResetToken.isExpireToken(token);
