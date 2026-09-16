@@ -1,7 +1,31 @@
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-dotenv.config({ path: path.join(process.cwd(), ".env") });
+
+const envPath = path.join(process.cwd(), ".env");
+dotenv.config({ path: envPath });
+
+delete process.env.AWS_ACCESS_KEY_ID;
+delete process.env.AWS_SECRET_ACCESS_KEY;
+delete process.env.AWS_SESSION_TOKEN;
+delete process.env.AWS_PROFILE;
+delete process.env.AWS_ACCESS_KEY;
+delete process.env.AWS_SECRET_KEY;
+
+if (fs.existsSync(envPath)) {
+  const fromFile = dotenv.parse(fs.readFileSync(envPath));
+  for (const key of [
+    "CLOUDFARE_ACCESS_KEY_ID",
+    "CLOUDFARE_SECRET_ACCESS_KEY",
+    "CLOUDFARE_R2_ENDPOINT",
+    "R2_BUCKET_NAME",
+    "CLOUDFARE_R2_PUBLIC_URL",
+  ]) {
+    if (fromFile[key]) {
+      process.env[key] = fromFile[key];
+    }
+  }
+}
 
 const runningInDocker = fs.existsSync("/.dockerenv");
 
@@ -71,13 +95,12 @@ export default {
     emailRetryQueue: process.env.EMAIL_RETRY_QUEUE!,
     emailFailedQueue: process.env.EMAIL_FAILED_QUEUE!,
   },
-  // stripe
   cloudflare: {
-    CLOUDFLARE_SECRET_KEY: process.env.R2_SECRET_ACCESS_KEY!,
-    CLOUDFLARE_BUCKET_NAME: process.env.R2_BUCKET_NAME!,
-    CLOUDFLARE_API_KEY: process.env.R2_ACCESS_KEY_ID!,
-    CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID!,
-    CLOUDFLARE_API_URL: process.env.CLOUDFLARE_R2_ENDPOINT!,
-    CLOUDFLARE_PUBLIC_URL: process.env.CLOUDFLARE_R2_PUBLIC_URL!,
+    CLOUDFARE_ACCESS_KEY_ID: process.env.CLOUDFARE_ACCESS_KEY_ID!,
+    CLOUDFARE_SECRET_ACCESS_KEY: process.env.CLOUDFARE_SECRET_ACCESS_KEY!,
+    CLOUDFARE_R2_ENDPOINT: process.env.CLOUDFARE_R2_ENDPOINT!,
+    R2_BUCKET_NAME: process.env.R2_BUCKET_NAME!,
+    CLOUDFARE_API_TOKEN: process.env.CLOUDFARE_API_TOKEN,
+    CLOUDFARE_R2_PUBLIC_URL: process.env.CLOUDFARE_R2_PUBLIC_URL,
   },
 };
