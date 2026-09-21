@@ -54,7 +54,6 @@ export type IUser = {
   verifiedStatus?: "pending" | "verified" | "rejected";
   documentVerified?: string;
   documentType?: "NID" | "PASSPORT" | "DRIVING_LICENSE";
-
   verified: boolean;
   isBanned: boolean;
   tokenVersion: number;

@@ -8,6 +8,7 @@ import { emailTemplate } from "../../../shared/emailTemplate";
 import { emailProducer } from "../../../services/email.producer";
 import { randomUUID } from "crypto";
 import { dataStoreToRedis } from "../../../redis/redis.store";
+import { resolveLocale } from "../../../types/emailTemplate";
 import QueryBuilder from "../../builder/queryBuilder";
 import { Viewme } from "../viewme/viewme.model";
 import { createBlurredImageFromPath } from "../../../shared/protectedFile";
@@ -16,7 +17,9 @@ import { Types } from "mongoose";
 import { Wink } from "../wink/wink.model";
 import { Swipe } from "../swipe/swipe.model";
 
-const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
+const createUserToDB = async (
+  payload: Partial<IUser> & { language?: string },
+): Promise<IUser> => {
   if (
     payload?.confirmPassword !== undefined &&
     payload?.password !== payload?.confirmPassword
@@ -26,8 +29,9 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
       "Password and confirm password do not match",
     );
   }
+  const locale = resolveLocale(payload.language);
   delete payload?.confirmPassword;
-
+  delete payload?.language;
   const createUser = await User.create(payload);
   if (!createUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "Failed to create user");
@@ -42,7 +46,7 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   };
 
   const emailJobId = randomUUID();
-  const createAccountTemplate = emailTemplate.createAccount(values);
+  const createAccountTemplate = emailTemplate.createAccount(values, locale);
   const emailData = {
     jobId: emailJobId,
     to: createAccountTemplate.to,

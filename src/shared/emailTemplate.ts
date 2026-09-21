@@ -1,5 +1,10 @@
 import { IContact } from "../app/modules/contact/contact.interface";
-import { ICreateAccount, IResetPassword } from "../types/emailTemplate";
+import {
+  ICreateAccount,
+  IResetPassword,
+  Locale,
+  resolveLocale,
+} from "../types/emailTemplate";
 
 const LOGO_URL =
   "https://res.cloudinary.com/dnsktebcu/image/upload/v1789462289/image_uiidjd.png";
@@ -10,7 +15,7 @@ const ACCENT_LIGHT = "#D0A933";
 const ACCENT_SOFT = "#F5EDD4";
 const BG = "#E8ECF1";
 const CARD = "#F7F8FA";
-const HEADER = "#FBF7EF";
+const HEADER = "#0F172A";
 const SURFACE = "#EEF1F5";
 const TEXT = "#0F172A";
 const MUTED = "#64748B";
@@ -19,9 +24,102 @@ const BORDER = "#D8DEE6";
 const FONT =
   "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-const emailShell = (content: string, preheader = "") => `
+const COPY = {
+  en: {
+    reserved: "All rights reserved.",
+    regards: "Best regards,",
+    team: `The ${BRAND} Team`,
+    createAccount: {
+      subject: `Verify your ${BRAND} account`,
+      preheader: (otp: number | string) =>
+        `Your ${BRAND} verification code is ${otp}. It expires in 3 minutes.`,
+      eyebrow: "Account verification",
+      title: (name: string) => `Welcome, ${name}`,
+      body: `Thanks for joining ${BRAND}. Enter the verification code below to confirm your email and activate your account.`,
+      otpLabel: "Verification code",
+      expiry: `This code expires in <strong style="color:${ACCENT};font-weight:600;">3 minutes</strong>. For your security, do not share it with anyone.`,
+      disclaimer: `If you did not create a ${BRAND} account, you can ignore this email. No action is required.`,
+    },
+    resetPassword: {
+      subject: `Reset your ${BRAND} password`,
+      preheader: (otp: number | string) =>
+        `Your ${BRAND} password reset code is ${otp}. It expires in 3 minutes.`,
+      eyebrow: "Password reset",
+      title: "Reset your password",
+      body: "We received a request to reset the password for your account. Use the code below to continue in the app.",
+      otpLabel: "Reset code",
+      expiry: `This code expires in <strong style="color:${ACCENT};font-weight:600;">3 minutes</strong>. For your security, do not share it with anyone.`,
+      disclaimer:
+        "If you did not request a password reset, ignore this email. Your password will stay the same.",
+    },
+    contact: {
+      subject: `We received your message — ${BRAND}`,
+      preheader: (subject: string) =>
+        `We received your message about "${subject}".`,
+      eyebrow: "Contact",
+      title: (name: string) => `Thanks for reaching out, ${name}`,
+      body: "We have received your message and a member of our team will respond as soon as possible.",
+      subjectLabel: "Subject",
+      messageLabel: "Your message",
+    },
+    feedback: {
+      subject: `Thank you for your message — ${BRAND}`,
+      preheader: `Thanks for contacting ${BRAND}. We will get back to you soon.`,
+      eyebrow: "Thank you",
+      title: (name: string) => `Hello, ${name}`,
+      body: "Thank you for contacting us. We appreciate you taking the time to write — we have received your message and will follow up shortly.",
+    },
+  },
+  pt: {
+    reserved: "Todos os direitos reservados.",
+    regards: "Com os melhores cumprimentos,",
+    team: `A Equipa ${BRAND}`,
+    createAccount: {
+      subject: `Verifique a sua conta ${BRAND}`,
+      preheader: (otp: number | string) =>
+        `O seu código de verificação ${BRAND} é ${otp}. Expira em 3 minutos.`,
+      eyebrow: "Verificação da conta",
+      title: (name: string) => `Olá, ${name}`,
+      body: `Obrigado por se juntar à ${BRAND}. Introduza o código de verificação abaixo para confirmar o seu email e ativar a sua conta.`,
+      otpLabel: "Código de verificação",
+      expiry: `Este código expira em <strong style="color:${ACCENT};font-weight:600;">3 minutos</strong>. Por segurança, não o partilhe com ninguém.`,
+      disclaimer: `Se não criou uma conta ${BRAND}, pode ignorar este email. Não é necessária qualquer ação.`,
+    },
+    resetPassword: {
+      subject: `Redefina a sua palavra-passe ${BRAND}`,
+      preheader: (otp: number | string) =>
+        `O seu código de redefinição de palavra-passe ${BRAND} é ${otp}. Expira em 3 minutos.`,
+      eyebrow: "Redefinição de palavra-passe",
+      title: "Redefina a sua palavra-passe",
+      body: "Recebemos um pedido para redefinir a palavra-passe da sua conta. Utilize o código abaixo para continuar na aplicação.",
+      otpLabel: "Código de redefinição",
+      expiry: `Este código expira em <strong style="color:${ACCENT};font-weight:600;">3 minutos</strong>. Por segurança, não o partilhe com ninguém.`,
+      disclaimer:
+        "Se não pediu a redefinição da palavra-passe, ignore este email. A sua palavra-passe permanecerá igual.",
+    },
+    contact: {
+      subject: `Recebemos a sua mensagem — ${BRAND}`,
+      preheader: (subject: string) =>
+        `Recebemos a sua mensagem sobre "${subject}".`,
+      eyebrow: "Contacto",
+      title: (name: string) => `Obrigado por nos contactar, ${name}`,
+      body: "Recebemos a sua mensagem e um membro da nossa equipa responderá o mais breve possível.",
+      subjectLabel: "Assunto",
+      messageLabel: "A sua mensagem",
+    },
+    feedback: {
+      subject: `Obrigado pela sua mensagem — ${BRAND}`,
+      preheader: `Obrigado por contactar a ${BRAND}. Entraremos em contacto em breve.`,
+      eyebrow: "Obrigado",
+      title: (name: string) => `Olá, ${name}`,
+      body: "Obrigado por nos contactar. Agradecemos o tempo que dedicou a escrever — recebemos a sua mensagem e responderemos em breve.",
+    },
+  },
+} as const;
+
+const emailShell = (content: string, preheader = "", locale: Locale = "en") => `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -38,8 +136,8 @@ const emailShell = (content: string, preheader = "") => `
             <td style="height:3px;background:linear-gradient(90deg, ${ACCENT} 0%, ${ACCENT_LIGHT} 50%, ${ACCENT} 100%);font-size:0;line-height:0;">&nbsp;</td>
           </tr>
           <tr>
-            <td style="padding:28px 32px 24px;background-color:${HEADER};text-align:center;border-bottom:1px solid ${BORDER};">
-              <img src="${LOGO_URL}" alt="${BRAND}" width="140" style="display:block;margin:0 auto;width:140px;max-width:100%;height:auto;border:0;" />
+            <td style="padding:28px 32px 24px;background-color:${HEADER};text-align:center;border-bottom:1px solid ${ACCENT};">
+              <img src="${LOGO_URL}" alt="${BRAND}" width="160" style="display:block;margin:0 auto;width:160px;max-width:100%;height:auto;border:0;" />
             </td>
           </tr>
           <tr>
@@ -53,7 +151,7 @@ const emailShell = (content: string, preheader = "") => `
                 ${BRAND}
               </p>
               <p style="margin:0;color:${MUTED};font-size:12px;line-height:1.6;">
-                &copy; ${new Date().getFullYear()} ${BRAND}. All rights reserved.
+                &copy; ${new Date().getFullYear()} ${BRAND}. ${COPY[locale].reserved}
               </p>
             </td>
           </tr>
@@ -104,9 +202,9 @@ const otpBlock = (otp: number | string, label: string) => `
   </table>
 `;
 
-const expiryNote = () => `
+const expiryNote = (text: string) => `
   <p style="margin:0 0 20px;color:${MUTED};font-size:14px;line-height:1.55;">
-    This code expires in <strong style="color:${ACCENT};font-weight:600;">3 minutes</strong>. For your security, do not share it with anyone.
+    ${text}
   </p>
 `;
 
@@ -116,7 +214,9 @@ const disclaimer = (text: string) => `
   </p>
 `;
 
-const infoCard = (rows: { label: string; value: string; preWrap?: boolean }[]) => `
+const infoCard = (
+  rows: { label: string; value: string; preWrap?: boolean }[],
+) => `
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:8px 0 0;background-color:${SURFACE};border-radius:14px;border:1px solid ${BORDER};">
     <tr>
       <td style="padding:22px 24px;">
@@ -139,97 +239,107 @@ const infoCard = (rows: { label: string; value: string; preWrap?: boolean }[]) =
   </table>
 `;
 
-const signature = () => `
+const signature = (locale: Locale) => `
   <table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:28px;">
     <tr>
       <td style="width:3px;background-color:${ACCENT};border-radius:2px;">&nbsp;</td>
       <td style="padding-left:14px;">
         <p style="margin:0;color:${MUTED};font-size:14px;line-height:1.6;">
-          Best regards,<br />
-          <span style="color:${TEXT};font-weight:600;">The ${BRAND} Team</span>
+          ${COPY[locale].regards}<br />
+          <span style="color:${TEXT};font-weight:600;">${COPY[locale].team}</span>
         </p>
       </td>
     </tr>
   </table>
 `;
 
-const createAccount = (values: ICreateAccount) => ({
-  to: values.email,
-  subject: `Verify your ${BRAND} account`,
-  html: emailShell(
-    `
-    ${eyebrow("Account verification")}
-    ${title(`Welcome, ${values.name}`)}
-    ${bodyText(
-      `Thanks for joining ${BRAND}. Enter the verification code below to confirm your email and activate your account.`,
-    )}
-    ${otpBlock(values.otp, "Verification code")}
-    ${expiryNote()}
-    ${disclaimer(
-      `If you did not create a ${BRAND} account, you can ignore this email. No action is required.`,
-    )}
-  `,
-    `Your ${BRAND} verification code is ${values.otp}. It expires in 3 minutes.`,
-  ),
-});
+const createAccount = (values: ICreateAccount, language?: string) => {
+  const locale = resolveLocale(language);
+  const t = COPY[locale].createAccount;
 
-const resetPassword = (values: IResetPassword) => ({
-  to: values.email,
-  subject: `Reset your ${BRAND} password`,
-  html: emailShell(
-    `
-    ${eyebrow("Password reset")}
-    ${title("Reset your password")}
-    ${bodyText(
-      "We received a request to reset the password for your account. Use the code below to continue in the app.",
-    )}
-    ${otpBlock(values.otp, "Reset code")}
-    ${expiryNote()}
-    ${disclaimer(
-      "If you did not request a password reset, ignore this email. Your password will stay the same.",
-    )}
+  return {
+    to: values.email,
+    subject: t.subject,
+    html: emailShell(
+      `
+    ${eyebrow(t.eyebrow)}
+    ${title(t.title(values.name))}
+    ${bodyText(t.body)}
+    ${otpBlock(values.otp, t.otpLabel)}
+    ${expiryNote(t.expiry)}
+    ${disclaimer(t.disclaimer)}
   `,
-    `Your ${BRAND} password reset code is ${values.otp}. It expires in 3 minutes.`,
-  ),
-});
+      t.preheader(values.otp),
+      locale,
+    ),
+  };
+};
 
-const contactEmailTemp = (values: IContact) => ({
-  to: values.email,
-  subject: `We received your message — ${BRAND}`,
-  html: emailShell(
-    `
-    ${eyebrow("Contact")}
-    ${title(`Thanks for reaching out, ${values.name}`)}
-    ${bodyText(
-      "We have received your message and a member of our team will respond as soon as possible.",
-      "24px",
-    )}
+const resetPassword = (values: IResetPassword, language?: string) => {
+  const locale = resolveLocale(language);
+  const t = COPY[locale].resetPassword;
+
+  return {
+    to: values.email,
+    subject: t.subject,
+    html: emailShell(
+      `
+    ${eyebrow(t.eyebrow)}
+    ${title(t.title)}
+    ${bodyText(t.body)}
+    ${otpBlock(values.otp, t.otpLabel)}
+    ${expiryNote(t.expiry)}
+    ${disclaimer(t.disclaimer)}
+  `,
+      t.preheader(values.otp),
+      locale,
+    ),
+  };
+};
+
+const contactEmailTemp = (values: IContact, language?: string) => {
+  const locale = resolveLocale(language);
+  const t = COPY[locale].contact;
+
+  return {
+    to: values.email,
+    subject: t.subject,
+    html: emailShell(
+      `
+    ${eyebrow(t.eyebrow)}
+    ${title(t.title(values.name))}
+    ${bodyText(t.body, "24px")}
     ${infoCard([
-      { label: "Subject", value: values.subject },
-      { label: "Your message", value: values.message, preWrap: true },
+      { label: t.subjectLabel, value: values.subject },
+      { label: t.messageLabel, value: values.message, preWrap: true },
     ])}
-    ${signature()}
+    ${signature(locale)}
   `,
-    `We received your message about "${values.subject}".`,
-  ),
-});
+      t.preheader(values.subject),
+      locale,
+    ),
+  };
+};
 
-const feedbackEmailTemp = (values: IContact) => ({
-  to: values.email,
-  subject: `Thank you for your message — ${BRAND}`,
-  html: emailShell(
-    `
-    ${eyebrow("Thank you")}
-    ${title(`Hello, ${values.name}`)}
-    ${bodyText(
-      "Thank you for contacting us. We appreciate you taking the time to write — we have received your message and will follow up shortly.",
-      "0",
-    )}
-    ${signature()}
+const feedbackEmailTemp = (values: IContact, language?: string) => {
+  const locale = resolveLocale(language);
+  const t = COPY[locale].feedback;
+
+  return {
+    to: values.email,
+    subject: t.subject,
+    html: emailShell(
+      `
+    ${eyebrow(t.eyebrow)}
+    ${title(t.title(values.name))}
+    ${bodyText(t.body, "0")}
+    ${signature(locale)}
   `,
-    `Thanks for contacting ${BRAND}. We will get back to you soon.`,
-  ),
-});
+      t.preheader,
+      locale,
+    ),
+  };
+};
 
 export const emailTemplate = {
   createAccount,

@@ -23,6 +23,7 @@ const createUserZodSchema = z.object({
       confirmPassword: z
         .string({ required_error: "Confirm password is required" })
         .optional(),
+      language: z.enum(["en", "pt"]).optional().default("en"),
       profile: z.string({ required_error: "Profile is required" }).optional(),
       // protectedImages: z
       //   .string({ required_error: "Protected images is required" })

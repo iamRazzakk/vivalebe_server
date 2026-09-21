@@ -17,6 +17,14 @@ const createLoginZodSchema = z.object({
 const createForgetPasswordZodSchema = z.object({
     body: z.object({
         email: z.string({ required_error: 'Email is required' }).email({ message: 'Invalid email address' }),
+        language: z.enum(["en", "pt"]).optional().default("en"),
+    })
+});
+
+const createResendOtpZodSchema = z.object({
+    body: z.object({
+        email: z.string({ required_error: 'Email is required' }).email({ message: 'Invalid email address' }),
+        language: z.enum(["en", "pt"]).optional().default("en"),
     })
 });
 
@@ -44,6 +52,7 @@ const createChangePasswordZodSchema = z.object({
 export const AuthValidation = {
     createVerifyEmailZodSchema,
     createForgetPasswordZodSchema,
+    createResendOtpZodSchema,
     createLoginZodSchema,
     createResetPasswordZodSchema,
     createChangePasswordZodSchema,

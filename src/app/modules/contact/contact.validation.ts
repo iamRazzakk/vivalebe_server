@@ -9,6 +9,7 @@ const createContactZodSchema = z.object({
       .email({ message: "Invalid email" }),
     phone: z.string({ required_error: "Phone is required" }),
     message: z.string({ required_error: "Message is required" }),
+    language: z.enum(["en", "pt"]).optional().default("en"),
   }),
 });
 

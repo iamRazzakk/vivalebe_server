@@ -1,16 +1,18 @@
 import { randomUUID } from "crypto";
 import { USER_ROLES } from "../../../enums/user";
 import { emailTemplate } from "../../../shared/emailTemplate";
+import { resolveLocale } from "../../../types/emailTemplate";
 import { User } from "../user/user.model";
-import { ContactModel, IContact } from "./contact.interface";
+import { IContact } from "./contact.interface";
 import { Contact } from "./contact.model";
 import { emailProducer } from "../../../services/email.producer";
 
-const contactWithAdmin = async (payload: IContact) => {
+const contactWithAdmin = async (payload: IContact, language?: string) => {
+  const locale = resolveLocale(language);
   const admin = await User.findOne({ role: USER_ROLES.SUPER_ADMIN }).select(
     "email",
   );
-  const contactTemplate = emailTemplate.contactEmailTemp(payload);
+  const contactTemplate = emailTemplate.contactEmailTemp(payload, locale);
 
   const emailData = {
     jobId: randomUUID(),
@@ -22,7 +24,7 @@ const contactWithAdmin = async (payload: IContact) => {
 
   await emailProducer.sendEmailEvent(emailData);
   // also need to feedback to user
-  const feedbackTemplate = emailTemplate.feedbackEmailTemp(payload);
+  const feedbackTemplate = emailTemplate.feedbackEmailTemp(payload, locale);
   const feedbackData = {
     jobId: randomUUID(),
     to: payload.email,

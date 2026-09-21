@@ -22,6 +22,7 @@ import {
   dataStoreToRedis,
 } from "../../../redis/redis.store";
 import { IUser } from "../user/user.interface";
+import { resolveLocale } from "../../../types/emailTemplate";
 
 //login
 const loginUserFromDB = async (payload: ILoginData) => {
@@ -68,7 +69,7 @@ const loginUserFromDB = async (payload: ILoginData) => {
 };
 
 //forget password
-const forgetPasswordToDB = async (email: string) => {
+const forgetPasswordToDB = async (email: string, language?: string) => {
   const isExistUser = await User.isExistUserByEmail(email);
   if (!isExistUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
@@ -81,7 +82,10 @@ const forgetPasswordToDB = async (email: string) => {
     email: isExistUser.email,
   };
 
-  const forgetPassword = emailTemplate.resetPassword(value);
+  const forgetPassword = emailTemplate.resetPassword(
+    value,
+    resolveLocale(language),
+  );
   emailHelper.sendEmail(forgetPassword);
 
   //save to DB
@@ -284,7 +288,10 @@ const newAccessTokenToUser = async (refreshToken: string) => {
   };
 };
 
-const resendVerificationEmailToDB = async (email: string) => {
+const resendVerificationEmailToDB = async (
+  email: string,
+  language?: string,
+) => {
   // Find the user by ID
   const existingUser: any = await User.findOne({ email: email }).lean();
 
@@ -302,12 +309,15 @@ const resendVerificationEmailToDB = async (email: string) => {
   // Generate OTP and prepare email
   const otp = generateOTP();
   const emailValues = {
-    name: existingUser.firstName,
+    name: existingUser.name,
     otp,
     email: existingUser.email,
   };
 
-  const accountEmailTemplate = emailTemplate.createAccount(emailValues);
+  const accountEmailTemplate = emailTemplate.createAccount(
+    emailValues,
+    resolveLocale(language),
+  );
   emailHelper.sendEmail(accountEmailTemplate);
 
   await dataStoreToRedis(
