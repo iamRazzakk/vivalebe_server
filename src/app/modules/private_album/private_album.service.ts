@@ -38,11 +38,41 @@ const updatePrivateAlbumIntoDB = async (
   id: string,
   payload: Partial<IPrivateAlbum>,
 ) => {
+  const { images, media, protectedImages, user: _payloadUser, ...rest } =
+    payload;
+
+  const $set: Record<string, unknown> = { ...rest };
+  const $push: Record<string, unknown> = {};
+
+  // Append newly uploaded files; never replace existing ones
+  if (images?.length) {
+    $push.images = { $each: images };
+  }
+  if (media?.length) {
+    $push.media = { $each: media };
+  }
+  if (protectedImages?.length) {
+    $push.protectedImages = { $each: protectedImages };
+  }
+
+  const updateQuery: Record<string, unknown> = {};
+  if (Object.keys($set).length) {
+    updateQuery.$set = $set;
+  }
+  if (Object.keys($push).length) {
+    updateQuery.$push = $push;
+  }
+
   const privateAlbum = await PrivateAlbum.findOneAndUpdate(
     { user: new Types.ObjectId(user.id), _id: id },
-    payload,
+    updateQuery,
     { new: true },
   );
+
+  if (!privateAlbum) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Private album not found");
+  }
+
   return privateAlbum;
 };
 

@@ -24,7 +24,12 @@ router.post(
 
 router.post("/refresh-token", authLimiter, AuthController.newAccessToken);
 
-router.post("/resend-otp", authLimiter, AuthController.resendVerificationEmail);
+router.post(
+  "/resend-otp",
+  authLimiter,
+  validateRequest(AuthValidation.createResendOtpZodSchema),
+  AuthController.resendVerificationEmail,
+);
 
 router.post(
   "/verify-email",

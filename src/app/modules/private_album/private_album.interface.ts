@@ -90,6 +90,7 @@ export type IPrivateAlbum = {
   myHobbiesAndInterests?: string[];
   myFavoriteMusic?: string[];
   personality?: string;
+  albumCategory?: "public" | "private" | "";
 };
 
 export type PrivateAlbumModel = Model<IPrivateAlbum>;

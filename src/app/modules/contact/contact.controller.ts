@@ -6,14 +6,17 @@ import { StatusCodes } from "http-status-codes";
 
 const contact = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, subject, email, phone, message } = req.body;
-    const contact = await ContactServices.contactWithAdmin({
-      name,
-      subject,
-      email,
-      phone,
-      message,
-    });
+    const { name, subject, email, phone, message, language } = req.body;
+    const contact = await ContactServices.contactWithAdmin(
+      {
+        name,
+        subject,
+        email,
+        phone,
+        message,
+      },
+      language,
+    );
     sendResponse(res, {
       success: true,
       statusCode: StatusCodes.OK,

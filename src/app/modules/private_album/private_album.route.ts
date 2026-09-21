@@ -89,12 +89,12 @@ router.route("/:id").patch(
         }
       }
 
+      // Only attach file fields when new uploads exist (append on service)
       req.body = {
         ...data,
-        images,
-        media,
-        user: req.user!.id,
-        protectedImages,
+        ...(images.length ? { images } : {}),
+        ...(media.length ? { media } : {}),
+        ...(protectedImages.length ? { protectedImages } : {}),
       };
       next();
     } catch (error) {
