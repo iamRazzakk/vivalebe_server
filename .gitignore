@@ -1,7 +1,6 @@
 node_modules
 /uploads
 /winston
-.env*
 dist
 SECURITY.md
 *.txt
@@ -9,4 +8,4 @@ SECURITY.md
 *.log*
 build
 
-.vscode
+config.bat
